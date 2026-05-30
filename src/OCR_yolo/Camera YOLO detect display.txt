@@ -1,0 +1,286 @@
+Camera
+→ YOLO detect display
+→ OpenCV align
+→ YOLO detect digits
+→ sort digits
+→ validation logic
+→ database/API
+
+
+Mục tiêu cuối:
+
+Ảnh đồng hồ
+→ AI đọc chỉ số điện
+→ Output JSON/API
+
+Stack khuyên dùng:
+
+YOLOv8
+OpenCV
+PyTorch
+Roboflow hoặc CVAT
+
+
+
+PHASE 1 — Chuẩn bị môi trường
+Step 1 — Cài Python
+
+Khuyên:
+
+Python 3.10 hoặc 3.11
+
+Kiểm tra:
+
+python --version
+Step 2 — Tạo project
+mkdir meter-ai
+cd meter-ai
+Step 3 — Tạo virtual env
+python -m venv venv
+
+Activate:
+
+Windows
+venv\Scripts\activate
+Mac/Linux
+source venv/bin/activate
+Step 4 — Cài thư viện
+pip install ultralytics opencv-python torch torchvision numpy matplotlib
+
+Test:
+
+from ultralytics import YOLO
+import cv2
+
+print("OK")
+PHASE 2 — Thu thập dataset
+
+Đây là phần QUAN TRỌNG NHẤT.
+
+Model mạnh hay không phụ thuộc dataset.
+
+Step 5 — Chụp ảnh đồng hồ
+
+Bạn cần:
+
+1000–5000 ảnh
+
+Bao gồm:
+
+sáng/tối
+nghiêng
+blur nhẹ
+khoảng cách khác nhau
+đồng hồ cũ/mới
+số nửa vòng
+Cực kỳ quan trọng
+
+Phải có:
+
+digit đang chuyển động
+
+Ví dụ:
+
+3 → 4
+
+để model học thực tế.
+
+PHASE 3 — Annotate dữ liệu
+Step 6 — Chọn tool annotate
+
+Khuyên:
+
+Roboflow (dễ nhất)
+hoặc CVAT
+Step 7 — Label từng digit
+
+Bạn sẽ tạo 10 class:
+
+digit_0
+digit_1
+digit_2
+...
+digit_9
+
+Mỗi số:
+
+1 bounding box
+
+Ví dụ:
+
+[1][2][4][5][8]
+
+=> 5 box riêng.
+
+PHASE 4 — Train YOLO
+Step 8 — Export dataset YOLO format
+
+Từ Roboflow:
+
+Export → YOLOv8
+
+Bạn sẽ có:
+
+dataset/
+ ├── train
+ ├── valid
+ └── data.yaml
+Step 9 — Train model
+
+Tạo file:
+
+train.py
+
+Code:
+
+from ultralytics import YOLO
+
+model = YOLO("yolov8n.pt")
+
+model.train(
+    data="dataset/data.yaml",
+    epochs=100,
+    imgsz=640,
+    batch=16
+)
+
+Run:
+
+python train.py
+Step 10 — Kết quả model
+
+Sau train:
+
+runs/detect/train/weights/best.pt
+
+Đây là model của bạn.
+
+PHASE 5 — Test model
+Step 11 — Predict ảnh
+from ultralytics import YOLO
+
+model = YOLO("best.pt")
+
+results = model("test.jpg")
+Step 12 — Lấy digit
+
+Ví dụ:
+
+boxes = results[0].boxes
+
+Lấy:
+
+class
+tọa độ X
+Step 13 — Sort theo chiều ngang
+digits.sort(key=lambda x: x_position)
+
+Ghép:
+
+reading = "".join(digits)
+
+Output:
+
+12458
+PHASE 6 — OpenCV preprocess
+Step 14 — Crop vùng số
+
+Trước detect digit:
+
+crop display area
+
+Ví dụ:
+
+crop = image[y1:y2, x1:x2]
+Step 15 — Improve image
+gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+
+blur = cv2.GaussianBlur(gray, (3,3), 0)
+
+thresh = cv2.adaptiveThreshold(
+    blur,
+    255,
+    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+    cv2.THRESH_BINARY,
+    11,
+    2
+)
+
+Accuracy sẽ tăng mạnh.
+
+PHASE 7 — Logic validation
+Step 16 — Chống đọc sai
+
+Ví dụ:
+
+previous = 12458
+current = 02458
+
+=> sai.
+
+Rule:
+
+if current < previous:
+    reject()
+Step 17 — Voting nhiều frame
+
+Nếu dùng camera/video:
+
+12458
+12458
+12459
+12458
+
+=> lấy:
+
+12458
+PHASE 8 — Build API
+Step 18 — Tạo API bằng FastAPI
+
+Cài:
+
+pip install fastapi uvicorn
+app.py
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+Run:
+
+uvicorn app:app --reload
+PHASE 9 — Production
+Step 19 — Optimize model
+
+Sau khi ổn:
+
+chuyển sang YOLOv8s
+quantization
+TensorRT nếu dùng NVIDIA
+Step 20 — Deploy
+
+Có thể deploy:
+
+edge device
+Jetson Nano
+server GPU
+cloud API
+Kiến trúc cuối cùng
+Camera
+→ OpenCV preprocess
+→ YOLO detect digits
+→ sort digits
+→ validation
+→ API/database
+Cấu trúc project khuyên dùng
+meter-ai/
+├── dataset/
+├── models/
+├── api/
+├── inference/
+├── training/
+├── utils/
+└── app.py
