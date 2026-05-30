@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Đọc Đồng Hồ Điện - YOLOv8</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#0b0f19;--card:rgba(22,34,56,.65);--border:rgba(255,255,255,.08);--accent:#00f2fe;--accent2:#4facfe;--glow:rgba(0,242,254,.25);--text:#f3f4f6;--muted:#9ca3af;--ok:#10b981;--err:#ef4444;--warn:#f59e0b}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif}
+        body{background:var(--bg);color:var(--text);min-height:100vh;padding:24px 16px}
+        h1,h2,h3{font-family:'Outfit',sans-serif;font-weight:700}
+        header{max-width:1200px;margin:0 auto 24px;text-align:center;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(12px)}
+        header h1{font-size:1.8rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+        header p{color:var(--muted);font-size:.9rem}
+        .badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.8rem;font-weight:600;margin-top:8px;border:1px solid rgba(255,255,255,.05);background:rgba(0,0,0,.2)}
+        .badge .dot{width:8px;height:8px;border-radius:50%}
+        .badge.ok{color:var(--ok)}.badge.ok .dot{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+        .badge.warn{color:var(--warn)}.badge.warn .dot{background:var(--warn);box-shadow:0 0 8px var(--warn);animation:pulse 1.5s infinite}
+        .badge.err{color:var(--err)}.badge.err .dot{background:var(--err)}
+        @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+        .grid{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+        @media(max-width:768px){.grid{grid-template-columns:1fr}}
+        .panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;backdrop-filter:blur(12px);display:flex;flex-direction:column;gap:14px}
+        .panel-title{font-size:1.1rem;color:#fff;border-left:4px solid var(--accent);padding-left:10px}
+        .upload-zone{border:2px dashed rgba(255,255,255,.15);border-radius:12px;padding:40px 20px;text-align:center;cursor:pointer;transition:.3s;background:rgba(0,0,0,.15);min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+        .upload-zone:hover{border-color:var(--accent);background:rgba(0,242,254,.03)}
+        .upload-zone svg{width:40px;height:40px;stroke:var(--accent);fill:none;stroke-width:1.5}
+        .upload-zone span{font-size:.9rem;color:var(--muted)}
+        .preview-box{width:100%;background:#040810;border-radius:10px;padding:10px;border:1px solid rgba(255,255,255,.05);min-height:120px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+        .preview-box img{max-width:100%;max-height:350px;border-radius:4px}
+        .btn{border:none;color:#fff;padding:12px 20px;border-radius:10px;cursor:pointer;font-size:.95rem;font-weight:600;font-family:'Outfit',sans-serif;transition:.3s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .btn-primary{background:linear-gradient(135deg,#0284c7,#0369a1);box-shadow:0 4px 15px rgba(2,132,199,.3)}
+        .btn-primary:hover:not(:disabled){background:linear-gradient(135deg,#0391d7,#047bbd);transform:translateY(-1px)}
+        .btn-primary:disabled{background:#1e293b;color:#64748b;cursor:not-allowed;box-shadow:none}
+        .btn-sm{padding:8px 14px;font-size:.8rem;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px}
+        .btn-sm:hover{background:rgba(255,255,255,.12)}
+        .meter-outer{background:#07090e;border:3px solid #1e293b;border-radius:12px;padding:12px;box-shadow:inset 0 0 15px rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;gap:8px}
+        .meter-label{font-family:'Outfit';font-size:.75rem;font-weight:600;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+        .meter-display{display:flex;align-items:center;justify-content:center;padding:6px 0}
+        .dbox{width:38px;height:56px;display:flex;justify-content:center;align-items:center;font-family:'Share Tech Mono';font-size:2.4rem;font-weight:bold;margin:0 2px;border-radius:5px;box-shadow:inset 0 0 10px rgba(0,0,0,.8);border:1px solid rgba(255,255,255,.05);background:#111;color:#fff;position:relative}
+        .dbox::after{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.12)}
+        .log-box{background:#000;border-radius:8px;padding:8px 12px;height:100px;font-family:'Share Tech Mono',monospace;font-size:.72rem;color:#00ff88;overflow-y:auto;border:1px solid rgba(0,255,136,.15)}
+        .progress{height:6px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden}
+        .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+        .result-value{font-size:1.6rem;font-weight:700;font-family:'Share Tech Mono';color:var(--accent);text-align:center;padding:12px;background:rgba(0,0,0,.4);border:1px solid rgba(0,242,254,.2);border-radius:10px;text-shadow:0 0 10px rgba(0,242,254,.3)}
+        .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+        .info-item{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:8px 10px}
+        .info-item label{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+        .info-item .val{font-size:1rem;font-weight:600;color:#fff;font-family:'Share Tech Mono'}
+        .hidden{display:none!important}
+        select{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:#fff;padding:8px 10px;border-radius:8px;font-size:.85rem;outline:none}
+        .api-url-input{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);color:var(--accent);padding:8px 10px;border-radius:8px;font-size:.82rem;font-family:'Share Tech Mono';outline:none}
+        .bbox-list{max-height:150px;overflow-y:auto;font-family:'Share Tech Mono';font-size:.75rem;color:var(--muted)}
+        .bbox-item{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.03);display:flex;justify-content:space-between}
+        .bbox-item .digit{color:var(--accent);font-weight:700;font-size:1rem}
+        .bbox-item .conf{color:var(--ok)}
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔌 AI ĐỌC CHỈ SỐ ĐỒNG HỒ ĐIỆN CƠ</h1>
+        <p>Hệ thống nhận diện chữ số tự động bằng YOLOv8 + OpenCV</p>
+        <div class="badge warn" id="statusBadge"><div class="dot"></div><span>Chưa kết nối API</span></div>
+    </header>
+
+    <div class="grid">
+        <!-- LEFT: Upload & Config -->
+        <div class="panel">
+            <h2 class="panel-title">1. Tải ảnh đồng hồ</h2>
+            <input type="file" id="fileInput" class="hidden" accept="image/*">
+            <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-linecap="round"/></svg>
+                <span>Kéo thả ảnh hoặc <strong>Chọn tệp</strong></span>
+            </div>
+            <div class="preview-box" id="previewBox"><span style="color:var(--muted);font-size:.85rem">Chưa có ảnh</span></div>
+
+            <h2 class="panel-title" style="margin-top:8px">Cấu hình API</h2>
+            <label style="font-size:.8rem;color:var(--muted)">API Endpoint:</label>
+            <input type="text" class="api-url-input" id="apiUrl" value="http://localhost:8000/api/read-meter">
+            <label style="font-size:.8rem;color:var(--muted)">Confidence Threshold:</label>
+            <select id="confThreshold">
+                <option value="0.15">0.15 (Rất nhạy)</option>
+                <option value="0.25" selected>0.25 (Mặc định)</option>
+                <option value="0.4">0.40 (Chặt)</option>
+                <option value="0.5">0.50 (Rất chặt)</option>
+            </select>
+            <button class="btn btn-primary" id="detectBtn" disabled>🎯 Nhận diện chữ số (YOLO)</button>
+            <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+            <div class="log-box" id="logBox"><div>> Chờ ảnh đầu vào...</div></div>
+        </div>
+
+        <!-- RIGHT: Results -->
+        <div class="panel">
+            <h2 class="panel-title">2. Kết quả nhận diện</h2>
+
+            <div class="meter-outer">
+                <div class="meter-label">Chỉ số đồng hồ</div>
+                <div class="meter-display" id="meterDisplay"><span style="color:var(--muted);font-style:italic;font-size:.85rem">Chờ kết quả...</span></div>
+            </div>
+
+            <div class="result-value" id="resultValue">---</div>
+
+            <div class="info-grid">
+                <div class="info-item"><label>Confidence</label><div class="val" id="infoConf">-</div></div>
+                <div class="info-item"><label>Trạng thái</label><div class="val" id="infoValid">-</div></div>
+                <div class="info-item"><label>Số digit</label><div class="val" id="infoDigits">-</div></div>
+                <div class="info-item"><label>Thời gian</label><div class="val" id="infoTime">-</div></div>
+            </div>
+
+            <h2 class="panel-title">Ảnh kết quả (Bounding Boxes)</h2>
+            <div class="preview-box" id="annotatedBox"><span style="color:var(--muted);font-size:.85rem">Chưa có kết quả</span></div>
+
+            <h2 class="panel-title">Chi tiết từng digit</h2>
+            <div class="bbox-list" id="bboxList"><div style="padding:8px;color:var(--muted)">Chưa có dữ liệu</div></div>
+
+            <div style="display:flex;gap:8px;margin-top:4px">
+                <button class="btn btn-sm" style="flex:1" onclick="copyResult()">📋 Sao chép</button>
+                <button class="btn btn-sm" style="flex:1" onclick="exportJSON()">📄 Export JSON</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const previewBox = document.getElementById('previewBox');
+const detectBtn = document.getElementById('detectBtn');
+const progressBar = document.getElementById('progressBar');
+const logBox = document.getElementById('logBox');
+let currentFile = null;
+let lastResult = null;
+
+function log(msg) {
+    const d = document.createElement('div');
+    d.textContent = '> ' + msg;
+    logBox.appendChild(d);
+    logBox.scrollTop = logBox.scrollHeight;
+}
+
+// Check API health
+async function checkAPI() {
+    const badge = document.getElementById('statusBadge');
+    try {
+        const base = document.getElementById('apiUrl').value.replace('/api/read-meter', '');
+        const r = await fetch(base + '/', {signal: AbortSignal.timeout(3000)});
+        const data = await r.json();
+        if (data.model_loaded) {
+            badge.className = 'badge ok';
+            badge.innerHTML = '<div class="dot"></div><span>Model sẵn sàng</span>';
+            log('API kết nối thành công - Model đã tải.');
+        } else {
+            badge.className = 'badge warn';
+            badge.innerHTML = '<div class="dot"></div><span>API OK nhưng chưa có model</span>';
+            log('API OK nhưng model chưa được train.');
+        }
+    } catch(e) {
+        badge.className = 'badge err';
+        badge.innerHTML = '<div class="dot"></div><span>Không kết nối được API</span>';
+        log('Không kết nối được API. Chạy: cd server && python main.py');
+    }
+}
+checkAPI();
+
+// File input
+fileInput.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor='var(--accent)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor='rgba(255,255,255,.15)'; });
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.borderColor='rgba(255,255,255,.15)';
+    if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(file) {
+    currentFile = file;
+    const url = URL.createObjectURL(file);
+    previewBox.innerHTML = `<img src="${url}" alt="Meter">`;
+    dropZone.classList.add('hidden');
+    detectBtn.disabled = false;
+    log('Đã tải ảnh: ' + file.name);
+}
+
+// Detection
+detectBtn.addEventListener('click', async () => {
+    if (!currentFile) return;
+    detectBtn.disabled = true;
+    progressBar.style.width = '20%';
+    log('Đang gửi ảnh đến API...');
+
+    const formData = new FormData();
+    formData.append('image', currentFile);
+    formData.append('confidence', document.getElementById('confThreshold').value);
+    formData.append('include_annotated', 'true');
+
+    try {
+        progressBar.style.width = '50%';
+        const url = document.getElementById('apiUrl').value;
+        const r = await fetch(url, { method: 'POST', body: formData });
+
+        if (!r.ok) {
+            const err = await r.json();
+            throw new Error(err.detail || 'API error');
+        }
+
+        progressBar.style.width = '80%';
+        const data = await r.json();
+        lastResult = data;
+        log(`Nhận diện hoàn tất: "${data.meter_reading}" (${data.processing_time_ms}ms)`);
+        displayResult(data);
+        progressBar.style.width = '100%';
+    } catch(e) {
+        log('LỖI: ' + e.message);
+        alert('Lỗi: ' + e.message);
+        progressBar.style.width = '0%';
+    } finally {
+        detectBtn.disabled = false;
+    }
+});
+
+function displayResult(data) {
+    // Meter display
+    const md = document.getElementById('meterDisplay');
+    md.innerHTML = '';
+    if (data.meter_reading) {
+        for (const ch of data.meter_reading) {
+            const box = document.createElement('div');
+            box.className = 'dbox';
+            box.textContent = ch;
+            md.appendChild(box);
+        }
+    } else {
+        md.innerHTML = '<span style="color:var(--muted)">Không nhận diện được</span>';
+    }
+
+    // Result value
+    document.getElementById('resultValue').textContent = data.meter_reading || '---';
+
+    // Info grid
+    document.getElementById('infoConf').textContent = (data.confidence * 100).toFixed(1) + '%';
+    document.getElementById('infoConf').style.color = data.confidence > 0.7 ? 'var(--ok)' : 'var(--warn)';
+    document.getElementById('infoValid').textContent = data.is_valid ? '✅ Hợp lệ' : '❌ ' + data.rejection_reason;
+    document.getElementById('infoValid').style.color = data.is_valid ? 'var(--ok)' : 'var(--err)';
+    document.getElementById('infoDigits').textContent = data.digits ? data.digits.length : 0;
+    document.getElementById('infoTime').textContent = data.processing_time_ms + 'ms';
+
+    // Annotated image
+    const ab = document.getElementById('annotatedBox');
+    if (data.annotated_image_base64) {
+        ab.innerHTML = `<img src="data:image/jpeg;base64,${data.annotated_image_base64}" alt="Annotated">`;
+    }
+
+    // Bounding box list
+    const bl = document.getElementById('bboxList');
+    bl.innerHTML = '';
+    if (data.bounding_boxes && data.bounding_boxes.length) {
+        data.bounding_boxes.forEach((b, i) => {
+            const item = document.createElement('div');
+            item.className = 'bbox-item';
+            item.innerHTML = `<span class="digit">${b.digit}</span><span class="conf">${(b.confidence*100).toFixed(1)}%</span><span>[${b.bbox.join(', ')}]</span>`;
+            bl.appendChild(item);
+        });
+    }
+}
+
+function copyResult() {
+    if (lastResult) navigator.clipboard.writeText(lastResult.meter_reading);
+}
+function exportJSON() {
+    if (!lastResult) return;
+    const blob = new Blob([JSON.stringify(lastResult, null, 2)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'meter_reading.json';
+    a.click();
+}
+</script>
+</body>
+</html>
