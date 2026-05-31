@@ -3,7 +3,7 @@ import { Home, Building2, Users, DollarSign, BarChart3 } from 'lucide-react';
 
 export function MobileNavigation({ currentView, onViewChange }) {
   const menuItems = [
-    { id: 'dashboard', label: 'Tổng quan', icon: Home },
+    { id: 'dashboard', label: 'Chính', icon: Home },
     { id: 'rooms', label: 'Phòng', icon: Building2 },
     { id: 'tenants', label: 'Khách', icon: Users },
     { id: 'billing', label: 'Hóa đơn', icon: DollarSign },

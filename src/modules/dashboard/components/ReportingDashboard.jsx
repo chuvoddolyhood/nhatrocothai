@@ -1,5 +1,6 @@
 import { Card, CardContent } from '@mui/material';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
+import Header from '../../../shared/components/ui/Header';
 
 export function ReportingDashboard({ bills, rooms }) {
   const getLast6Months = () => {
@@ -38,10 +39,7 @@ export function ReportingDashboard({ bills, rooms }) {
 
   return (
     <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl mb-1">Báo cáo</h1>
-        <p className="text-gray-600 text-sm">Thống kê & phân tích</p>
-      </div>
+      <Header title={"Báo cáo"} description={"Thống kê & phân tích"} />
 
       <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', mb: 4 }}>
         <CardContent className="p-4">
