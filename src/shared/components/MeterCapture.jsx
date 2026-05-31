@@ -1,4 +1,4 @@
-import { useMeterOCR } from "../hooks/useMeterOCR";
+import { useMeterOCR } from "../../hooks/useMeterOCR";
 
 export default function MeterCapture() {
     const { processImage } = useMeterOCR();
