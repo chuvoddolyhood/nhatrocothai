@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Card, CardContent, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, User, Phone, CreditCard, Calendar, Home } from 'lucide-react';
+import Header from '../../../shared/components/ui/Header';
 
 export function TenantListPage({ tenants, availableRooms, onAddTenant, onUpdateTenant, onDeleteTenant }) {
   const [open, setOpen] = useState(false);
@@ -63,10 +64,7 @@ export function TenantListPage({ tenants, availableRooms, onAddTenant, onUpdateT
 
   return (
     <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl mb-1">Khách thuê</h1>
-        <p className="text-gray-600 text-sm">{tenants.length} khách đang thuê</p>
-      </div>
+      <Header title={"Khách thuê"} description={`${tenants.length} khách đang thuê`} />
 
       <div className="grid grid-cols-1 gap-4">
         {tenants.map((tenant, index) => (

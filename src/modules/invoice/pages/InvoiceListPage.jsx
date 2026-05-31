@@ -3,6 +3,7 @@ import { Button, Dialog, Card, CardContent, Chip, Fab } from '@mui/material';
 import { Plus, Zap, Droplet, Eye, Check } from 'lucide-react';
 import { MeterReadingForm } from '../../meter-reading/components/MeterReadingForm';
 import { InvoicePreview } from '../components/InvoicePreview';
+import Header from '../../../shared/components/ui/Header';
 
 export function InvoiceListPage({ bills, rooms, tenants, onCreateBill, onMarkPaid }) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -92,10 +93,7 @@ export function InvoiceListPage({ bills, rooms, tenants, onCreateBill, onMarkPai
 
   return (
     <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl mb-1">Hóa đơn</h1>
-        <p className="text-gray-600 text-sm">Tháng {currentMonth}</p>
-      </div>
+      <Header title={"Hóa đơn"} description={`Tháng ${currentMonth}`} />
 
       <div className="space-y-4">
         {currentMonthBills.map((bill) => (

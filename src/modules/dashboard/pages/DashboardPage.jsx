@@ -1,61 +1,94 @@
 import { Card, CardContent } from '@mui/material';
 import { Home, Users, DollarSign, TrendingUp, AlertCircle } from 'lucide-react';
+import Header from '../../../shared/components/ui/Header';
+import CardDashBoard from '../components/CardDashBoard';
+import ProgressBarDashboard from '../components/ProgressBarDashboard';
+import RevenueRow from '../components/RevenueRow';
 
 export function DashboardPage({ stats }) {
-  const collectionRate = stats.occupiedRooms > 0
-    ? Math.round((stats.paidThisMonth / stats.occupiedRooms) * 100)
-    : 0;
+  const { totalRooms, occupiedRooms, emptyRooms, paidThisMonth, unpaidThisMonth, expectedRevenue, actualRevenue } = stats;
+
+  const collectionRate = occupiedRooms > 0 ? Math.round((paidThisMonth / occupiedRooms) * 100) : 0;
+
+  const dashboardItems = [{
+    bgGradient: 'from-indigo-500 to-purple-600',
+    icon: Home,
+    title: 'Tổng phòng',
+    value: totalRooms
+  },
+  {
+    bgGradient: 'from-green-500 to-emerald-600',
+    icon: Users,
+    title: 'Đang thuê',
+    value: occupiedRooms
+  },
+  {
+    bgGradient: 'from-orange-400 to-pink-500',
+    icon: AlertCircle,
+    title: 'Phòng trống',
+    value: emptyRooms
+  },
+  {
+    bgGradient: 'from-blue-500 to-cyan-600',
+    icon: TrendingUp,
+    title: 'Tỷ lệ thu',
+    value: `${collectionRate}%`
+  }
+  ]
+
+  const revenueRows = [
+    {
+      label: 'Dự kiến',
+      value: expectedRevenue,
+      bgClass: 'bg-gray-50',
+      textClass: 'text-gray-600',
+    },
+    {
+      label: 'Đã thu',
+      value: actualRevenue,
+      bgClass: 'bg-green-50',
+      textClass: 'text-green-700',
+    },
+    {
+      label: 'Còn nợ',
+      value: expectedRevenue - actualRevenue,
+      bgClass: 'bg-red-50',
+      textClass: 'text-red-700',
+    },
+  ];
+
+  const paymentStatusItems = [
+    {
+      label: 'Đã đóng tiền',
+      value: paidThisMonth,
+      gradient: 'bg-gradient-to-r from-green-400 to-emerald-500',
+    },
+    {
+      label: 'Chưa đóng tiền',
+      value: unpaidThisMonth,
+      gradient: 'bg-gradient-to-r from-red-400 to-pink-500',
+    },
+  ];
+
+  const cardStyle = {
+    borderRadius: '16px',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+  };
 
   return (
     <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-      <div className="mb-6">
-        <h1 className="text-2xl mb-1">Xin chào!</h1>
-        <p className="text-gray-600 text-sm">Tổng quan tình hình nhà trọ</p>
-      </div>
+      <Header title={"Xin chào!"} description={"Tổng quan tình hình nhà trọ"} />
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <Card className="overflow-hidden" sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-4 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <Home size={20} />
-              <span className="text-xs opacity-90">Tổng phòng</span>
-            </div>
-            <p className="text-3xl">{stats.totalRooms}</p>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden" sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-4 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={20} />
-              <span className="text-xs opacity-90">Đang thuê</span>
-            </div>
-            <p className="text-3xl">{stats.occupiedRooms}</p>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden" sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <div className="bg-gradient-to-br from-orange-400 to-pink-500 p-4 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <AlertCircle size={20} />
-              <span className="text-xs opacity-90">Phòng trống</span>
-            </div>
-            <p className="text-3xl">{stats.emptyRooms}</p>
-          </div>
-        </Card>
-
-        <Card className="overflow-hidden" sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-4 text-white">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp size={20} />
-              <span className="text-xs opacity-90">Tỷ lệ thu</span>
-            </div>
-            <p className="text-3xl">{collectionRate}%</p>
-          </div>
-        </Card>
+        {dashboardItems.map((item) => (
+          <CardDashBoard
+            key={item.title}
+            {...item}
+          />
+        ))}
       </div>
 
-      <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', mb: 3 }}>
+      <Card sx={{ ...cardStyle, mb: 3 }}>
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg flex items-center gap-2">
@@ -65,54 +98,28 @@ export function DashboardPage({ stats }) {
           </div>
 
           <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-              <span className="text-sm text-gray-600">Dự kiến:</span>
-              <span className="font-medium text-base">{stats.expectedRevenue.toLocaleString('vi-VN')} ₫</span>
-            </div>
-
-            <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl">
-              <span className="text-sm text-green-700">Đã thu:</span>
-              <span className="font-medium text-base text-green-700">{stats.actualRevenue.toLocaleString('vi-VN')} ₫</span>
-            </div>
-
-            <div className="flex justify-between items-center p-3 bg-red-50 rounded-xl">
-              <span className="text-sm text-red-700">Còn nợ:</span>
-              <span className="font-medium text-base text-red-700">{(stats.expectedRevenue - stats.actualRevenue).toLocaleString('vi-VN')} ₫</span>
-            </div>
+            {revenueRows.map((item) => (
+              <RevenueRow
+                key={item.label}
+                {...item}
+              />
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+      <Card sx={{ ...cardStyle }}>
         <CardContent className="p-4">
           <h2 className="text-lg mb-4">Tình trạng thanh toán</h2>
 
           <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2 text-sm">
-                <span className="text-gray-600">Đã đóng tiền</span>
-                <span className="font-medium">{stats.paidThisMonth}/{stats.occupiedRooms} phòng</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-green-400 to-emerald-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${(stats.paidThisMonth / stats.occupiedRooms) * 100}%` }}
-                ></div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between mb-2 text-sm">
-                <span className="text-gray-600">Chưa đóng tiền</span>
-                <span className="font-medium">{stats.unpaidThisMonth}/{stats.occupiedRooms} phòng</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-red-400 to-pink-500 h-2 rounded-full transition-all duration-500"
-                  style={{ width: `${(stats.unpaidThisMonth / stats.occupiedRooms) * 100}%` }}
-                ></div>
-              </div>
-            </div>
+            {paymentStatusItems.map((item) => (
+              <ProgressBarDashboard
+                key={item.label}
+                total={occupiedRooms}
+                {...item}
+              />
+            ))}
           </div>
         </CardContent>
       </Card>
