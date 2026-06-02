@@ -6,6 +6,7 @@ import { RoomListPage } from './modules/room/pages/RoomListPage';
 import { TenantListPage } from './modules/tenant/pages/TenantListPage';
 import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
 import { ReportingDashboard } from './modules/dashboard/components/ReportingDashboard';
+import { RoomService } from './modules/room/services/RoomService';
 
 const theme = createTheme({
   palette: {
@@ -36,206 +37,175 @@ const theme = createTheme({
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
 
-  const [rooms, setRooms] = useState([
-    { id: '1', number: '101', status: 'occupied', price: 2500000, deposit: 5000000, floor: 1, area: 25 },
-    { id: '2', number: '102', status: 'occupied', price: 2500000, deposit: 5000000, floor: 1, area: 25 },
-    { id: '3', number: '103', status: 'empty', price: 2800000, deposit: 5600000, floor: 1, area: 30 },
-    { id: '4', number: '201', status: 'occupied', price: 2500000, deposit: 5000000, floor: 2, area: 25 },
-    { id: '5', number: '202', status: 'occupied', price: 2500000, deposit: 5000000, floor: 2, area: 25 },
-    { id: '6', number: '203', status: 'repair', price: 2800000, deposit: 5600000, floor: 2, area: 30 },
-    { id: '7', number: '301', status: 'occupied', price: 2500000, deposit: 5000000, floor: 3, area: 25 },
-    { id: '8', number: '302', status: 'empty', price: 2500000, deposit: 5000000, floor: 3, area: 25 },
-  ]);
+  // const [tenants, setTenants] = useState([
+  //   { id: '1', name: 'Nguyễn Văn A', phone: '0901234567', idCard: '079123456789', moveInDate: '2024-01-15', roomNumber: '101', roomId: '1' },
+  //   { id: '2', name: 'Trần Thị B', phone: '0902345678', idCard: '079234567890', moveInDate: '2024-02-01', roomNumber: '102', roomId: '2' },
+  //   { id: '3', name: 'Lê Văn C', phone: '0903456789', idCard: '079345678901', moveInDate: '2024-03-10', roomNumber: '201', roomId: '4' },
+  //   { id: '4', name: 'Phạm Thị D', phone: '0904567890', idCard: '079456789012', moveInDate: '2024-02-15', roomNumber: '202', roomId: '5' },
+  //   { id: '5', name: 'Hoàng Văn E', phone: '0905678901', idCard: '079567890123', moveInDate: '2024-04-01', roomNumber: '301', roomId: '7' },
+  // ]);
 
-  const [tenants, setTenants] = useState([
-    { id: '1', name: 'Nguyễn Văn A', phone: '0901234567', idCard: '079123456789', moveInDate: '2024-01-15', roomNumber: '101', roomId: '1' },
-    { id: '2', name: 'Trần Thị B', phone: '0902345678', idCard: '079234567890', moveInDate: '2024-02-01', roomNumber: '102', roomId: '2' },
-    { id: '3', name: 'Lê Văn C', phone: '0903456789', idCard: '079345678901', moveInDate: '2024-03-10', roomNumber: '201', roomId: '4' },
-    { id: '4', name: 'Phạm Thị D', phone: '0904567890', idCard: '079456789012', moveInDate: '2024-02-15', roomNumber: '202', roomId: '5' },
-    { id: '5', name: 'Hoàng Văn E', phone: '0905678901', idCard: '079567890123', moveInDate: '2024-04-01', roomNumber: '301', roomId: '7' },
-  ]);
+  // const [bills, setBills] = useState([
+  //   {
+  //     id: '1',
+  //     roomId: '1',
+  //     roomNumber: '101',
+  //     tenantName: 'Nguyễn Văn A',
+  //     month: '2026-05',
+  //     roomPrice: 2500000,
+  //     electricPrevious: 150,
+  //     electricCurrent: 180,
+  //     electricPrice: 3500,
+  //     waterPrevious: 20,
+  //     waterCurrent: 25,
+  //     waterPrice: 15000,
+  //     otherServices: [{ name: 'Internet', price: 100000 }],
+  //     total: 2780000,
+  //     paid: true,
+  //     paidDate: '2026-05-05',
+  //   },
+  //   {
+  //     id: '2',
+  //     roomId: '2',
+  //     roomNumber: '102',
+  //     tenantName: 'Trần Thị B',
+  //     month: '2026-05',
+  //     roomPrice: 2500000,
+  //     electricPrevious: 140,
+  //     electricCurrent: 165,
+  //     electricPrice: 3500,
+  //     waterPrevious: 18,
+  //     waterCurrent: 22,
+  //     waterPrice: 15000,
+  //     otherServices: [{ name: 'Internet', price: 100000 }],
+  //     total: 2747500,
+  //     paid: false,
+  //   },
+  //   {
+  //     id: '3',
+  //     roomId: '4',
+  //     roomNumber: '201',
+  //     tenantName: 'Lê Văn C',
+  //     month: '2026-05',
+  //     roomPrice: 2500000,
+  //     electricPrevious: 160,
+  //     electricCurrent: 190,
+  //     electricPrice: 3500,
+  //     waterPrevious: 22,
+  //     waterCurrent: 27,
+  //     waterPrice: 15000,
+  //     otherServices: [{ name: 'Internet', price: 100000 }],
+  //     total: 2780000,
+  //     paid: true,
+  //     paidDate: '2026-05-03',
+  //   },
+  //   {
+  //     id: '4',
+  //     roomId: '5',
+  //     roomNumber: '202',
+  //     tenantName: 'Phạm Thị D',
+  //     month: '2026-05',
+  //     roomPrice: 2500000,
+  //     electricPrevious: 135,
+  //     electricCurrent: 155,
+  //     electricPrice: 3500,
+  //     waterPrevious: 19,
+  //     waterCurrent: 23,
+  //     waterPrice: 15000,
+  //     otherServices: [{ name: 'Internet', price: 100000 }],
+  //     total: 2730000,
+  //     paid: false,
+  //   },
+  //   {
+  //     id: '5',
+  //     roomId: '7',
+  //     roomNumber: '301',
+  //     tenantName: 'Hoàng Văn E',
+  //     month: '2026-05',
+  //     roomPrice: 2500000,
+  //     electricPrevious: 145,
+  //     electricCurrent: 170,
+  //     electricPrice: 3500,
+  //     waterPrevious: 21,
+  //     waterCurrent: 26,
+  //     waterPrice: 15000,
+  //     otherServices: [{ name: 'Internet', price: 100000 }],
+  //     total: 2762500,
+  //     paid: true,
+  //     paidDate: '2026-05-01',
+  //   },
+  // ]);
 
-  const [bills, setBills] = useState([
-    {
-      id: '1',
-      roomId: '1',
-      roomNumber: '101',
-      tenantName: 'Nguyễn Văn A',
-      month: '2026-05',
-      roomPrice: 2500000,
-      electricPrevious: 150,
-      electricCurrent: 180,
-      electricPrice: 3500,
-      waterPrevious: 20,
-      waterCurrent: 25,
-      waterPrice: 15000,
-      otherServices: [{ name: 'Internet', price: 100000 }],
-      total: 2780000,
-      paid: true,
-      paidDate: '2026-05-05',
-    },
-    {
-      id: '2',
-      roomId: '2',
-      roomNumber: '102',
-      tenantName: 'Trần Thị B',
-      month: '2026-05',
-      roomPrice: 2500000,
-      electricPrevious: 140,
-      electricCurrent: 165,
-      electricPrice: 3500,
-      waterPrevious: 18,
-      waterCurrent: 22,
-      waterPrice: 15000,
-      otherServices: [{ name: 'Internet', price: 100000 }],
-      total: 2747500,
-      paid: false,
-    },
-    {
-      id: '3',
-      roomId: '4',
-      roomNumber: '201',
-      tenantName: 'Lê Văn C',
-      month: '2026-05',
-      roomPrice: 2500000,
-      electricPrevious: 160,
-      electricCurrent: 190,
-      electricPrice: 3500,
-      waterPrevious: 22,
-      waterCurrent: 27,
-      waterPrice: 15000,
-      otherServices: [{ name: 'Internet', price: 100000 }],
-      total: 2780000,
-      paid: true,
-      paidDate: '2026-05-03',
-    },
-    {
-      id: '4',
-      roomId: '5',
-      roomNumber: '202',
-      tenantName: 'Phạm Thị D',
-      month: '2026-05',
-      roomPrice: 2500000,
-      electricPrevious: 135,
-      electricCurrent: 155,
-      electricPrice: 3500,
-      waterPrevious: 19,
-      waterCurrent: 23,
-      waterPrice: 15000,
-      otherServices: [{ name: 'Internet', price: 100000 }],
-      total: 2730000,
-      paid: false,
-    },
-    {
-      id: '5',
-      roomId: '7',
-      roomNumber: '301',
-      tenantName: 'Hoàng Văn E',
-      month: '2026-05',
-      roomPrice: 2500000,
-      electricPrevious: 145,
-      electricCurrent: 170,
-      electricPrice: 3500,
-      waterPrevious: 21,
-      waterCurrent: 26,
-      waterPrice: 15000,
-      otherServices: [{ name: 'Internet', price: 100000 }],
-      total: 2762500,
-      paid: true,
-      paidDate: '2026-05-01',
-    },
-  ]);
+  // const handleAddTenant = (tenant) => {
+  //   const newTenant = { ...tenant, id: Date.now().toString() };
+  //   setTenants([...tenants, newTenant]);
 
-  const handleAddRoom = (room) => {
-    const newRoom = { ...room, id: Date.now().toString() };
-    setRooms([...rooms, newRoom]);
-  };
+  //   setRooms(rooms.map(room =>
+  //     room.id === tenant.roomId ? { ...room, status: 'occupied' } : room
+  //   ));
+  // };
 
-  const handleUpdateRoom = (id, updates) => {
-    setRooms(rooms.map(room => room.id === id ? { ...room, ...updates } : room));
-  };
+  // const handleUpdateTenant = (id, updates) => {
+  //   setTenants(tenants.map(tenant => tenant.id === id ? { ...tenant, ...updates } : tenant));
+  // };
 
-  const handleDeleteRoom = (id) => {
-    setRooms(rooms.filter(room => room.id !== id));
-  };
+  // const handleDeleteTenant = (id) => {
+  //   const tenant = tenants.find(t => t.id === id);
+  //   setTenants(tenants.filter(t => t.id !== id));
 
-  const handleAddTenant = (tenant) => {
-    const newTenant = { ...tenant, id: Date.now().toString() };
-    setTenants([...tenants, newTenant]);
+  //   if (tenant) {
+  //     setRooms(rooms.map(room =>
+  //       room.id === tenant.roomId ? { ...room, status: 'empty' } : room
+  //     ));
+  //   }
+  // };
 
-    setRooms(rooms.map(room =>
-      room.id === tenant.roomId ? { ...room, status: 'occupied' } : room
-    ));
-  };
+  // const handleCreateBill = (bill) => {
+  //   const electricTotal = (bill.electricCurrent - bill.electricPrevious) * bill.electricPrice;
+  //   const waterTotal = (bill.waterCurrent - bill.waterPrevious) * bill.waterPrice;
+  //   const servicesTotal = bill.otherServices.reduce((sum, s) => sum + s.price, 0);
+  //   const total = bill.roomPrice + electricTotal + waterTotal + servicesTotal;
 
-  const handleUpdateTenant = (id, updates) => {
-    setTenants(tenants.map(tenant => tenant.id === id ? { ...tenant, ...updates } : tenant));
-  };
+  //   const newBill = {
+  //     ...bill,
+  //     id: Date.now().toString(),
+  //     total,
+  //   };
 
-  const handleDeleteTenant = (id) => {
-    const tenant = tenants.find(t => t.id === id);
-    setTenants(tenants.filter(t => t.id !== id));
+  //   setBills([...bills, newBill]);
+  // };
 
-    if (tenant) {
-      setRooms(rooms.map(room =>
-        room.id === tenant.roomId ? { ...room, status: 'empty' } : room
-      ));
-    }
-  };
+  // const handleMarkPaid = (id, paidDate) => {
+  //   setBills(bills.map(bill =>
+  //     bill.id === id ? { ...bill, paid: true, paidDate } : bill
+  //   ));
+  // };
 
-  const handleCreateBill = (bill) => {
-    const electricTotal = (bill.electricCurrent - bill.electricPrevious) * bill.electricPrice;
-    const waterTotal = (bill.waterCurrent - bill.waterPrevious) * bill.waterPrice;
-    const servicesTotal = bill.otherServices.reduce((sum, s) => sum + s.price, 0);
-    const total = bill.roomPrice + electricTotal + waterTotal + servicesTotal;
+  // // const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
+  // const currentMonth = new Date().toISOString().slice(0, 7);
+  // const currentMonthBills = bills.filter(b => b.month === currentMonth);
+  // const paidBills = currentMonthBills.filter(b => b.paid).length;
+  // const unpaidBills = currentMonthBills.filter(b => !b.paid).length;
+  // const expectedRevenue = currentMonthBills.reduce((sum, b) => sum + b.total, 0);
+  // const actualRevenue = currentMonthBills.filter(b => b.paid).reduce((sum, b) => sum + b.total, 0);
 
-    const newBill = {
-      ...bill,
-      id: Date.now().toString(),
-      total,
-    };
-
-    setBills([...bills, newBill]);
-  };
-
-  const handleMarkPaid = (id, paidDate) => {
-    setBills(bills.map(bill =>
-      bill.id === id ? { ...bill, paid: true, paidDate } : bill
-    ));
-  };
-
-  const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const currentMonthBills = bills.filter(b => b.month === currentMonth);
-  const paidBills = currentMonthBills.filter(b => b.paid).length;
-  const unpaidBills = currentMonthBills.filter(b => !b.paid).length;
-  const expectedRevenue = currentMonthBills.reduce((sum, b) => sum + b.total, 0);
-  const actualRevenue = currentMonthBills.filter(b => b.paid).reduce((sum, b) => sum + b.total, 0);
-
-  const stats = {
-    totalRooms: rooms.length,
-    occupiedRooms,
-    emptyRooms: rooms.filter(r => r.status === 'empty').length,
-    paidThisMonth: paidBills,
-    unpaidThisMonth: unpaidBills,
-    expectedRevenue,
-    actualRevenue,
-  };
+  // const stats = {
+  //   totalRooms: rooms.length,
+  //   occupiedRooms,
+  //   emptyRooms: rooms.filter(r => r.status === 'empty').length,
+  //   paidThisMonth: paidBills,
+  //   unpaidThisMonth: unpaidBills,
+  //   expectedRevenue,
+  //   actualRevenue,
+  // };
 
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        {currentView === 'dashboard' && <DashboardPage stats={stats} />}
-        {currentView === 'rooms' && (
-          <RoomListPage
-            rooms={rooms}
-            onAddRoom={handleAddRoom}
-            onUpdateRoom={handleUpdateRoom}
-            onDeleteRoom={handleDeleteRoom}
-          />
-        )}
-        {currentView === 'tenants' && (
+        {/* {currentView === 'dashboard' && <DashboardPage stats={stats} />} */}
+        {currentView === 'rooms' && <RoomListPage />}
+        {/* {currentView === 'tenants' && (
           <TenantListPage
             tenants={tenants}
             availableRooms={rooms.filter(r => r.status === 'empty').map(r => ({ id: r.id, number: r.number }))}
@@ -258,7 +228,7 @@ export default function App() {
             bills={bills}
             rooms={rooms}
           />
-        )}
+        )} */}
 
         <MobileNavigation
           currentView={currentView}
