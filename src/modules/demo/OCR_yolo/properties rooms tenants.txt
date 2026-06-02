@@ -1,0 +1,265 @@
+properties
+rooms
+tenants
+contracts
+meterReadings
+invoices
+payments
+roomPrices        <-- lịch sử giá phòng
+
+utilityPrices     <-- lịch sử giá điện nước internet
+monthlyReports
+
+
+
+Cấu trúc Collection
+properties
+properties
+  property_001
+    name: "Khu trọ Quận 9"
+    address: "..."
+    roomCount: 3
+    occupiedRoomCount: 2
+    createdAt: Timestamp
+    
+    
+rooms
+
+Mỗi phòng là 1 document.
+
+rooms
+  room_001
+    propertyId: "property_001"
+
+    roomCode: "P101"
+
+    currentRent: 1000000
+
+    status: "OCCUPIED"
+
+    currentContractId: "contract_001"
+
+    currentTenantNames: [
+      "Nguyễn Văn A",
+      "Trần Văn B"
+    ]
+
+    createdAt: Timestamp
+
+Lý do lưu:
+
+currentTenantNames
+currentContractId
+
+để render danh sách phòng nhanh.
+
+tenants
+tenants
+  tenant_001
+    fullName: "Nguyễn Văn A"
+
+    phone: "0909xxxx"
+
+    cccdNumber: "0792xxxxx"
+
+    permanentAddress: "..."
+
+    cccdFrontUrl: "..."
+
+    cccdBackUrl: "..."
+
+    createdAt: Timestamp
+
+Ảnh CCCD upload lên Firebase Storage.
+
+contracts
+contracts
+  contract_001
+
+    roomId: "room_001"
+
+    tenantIds: [
+      "tenant_001",
+      "tenant_002"
+    ]
+
+    representativeTenantId: "tenant_001"
+
+    monthlyRent: 1000000
+
+    depositAmount: 1000000
+
+    startDate: Timestamp
+
+    endDate: null
+
+    status: "ACTIVE"
+
+    createdAt: Timestamp
+    
+    
+utilityPrices
+
+Lưu lịch sử giá.
+
+utilityPrices
+  price_001
+
+    effectiveFrom: "2025-01-01"
+
+    electricPrice: 3500
+
+    waterPrice: 8000
+
+    internetPrice: 100000
+
+Khi tăng giá:
+
+utilityPrices
+  price_002
+
+    effectiveFrom: "2027-01-01"
+
+    electricPrice: 4000
+
+    waterPrice: 10000
+
+    internetPrice: 150000
+
+Không update document cũ.
+
+meterReadings
+
+Mỗi tháng mỗi phòng một document.
+
+meterReadings
+  room_001_2026_05
+
+    roomId: "room_001"
+
+    month: "2026-05"
+
+    electricOld: 100
+    electricNew: 130
+
+    waterOld: 50
+    waterNew: 55
+
+    electricUsed: 30
+    waterUsed: 5
+
+    createdAt: Timestamp
+
+Mình khuyên lưu luôn:
+
+electricUsed
+waterUsed
+
+để đỡ tính lại.
+
+invoices
+
+Collection quan trọng nhất.
+
+invoices
+  invoice_001
+
+    roomId: "room_001"
+
+    contractId: "contract_001"
+
+    month: "2026-05"
+
+    roomFee: 1000000
+
+    electricFee: 105000
+
+    waterFee: 40000
+
+    internetFee: 100000
+
+    totalAmount: 1245000
+
+    paymentStatus: "UNPAID"
+
+    paidAt: null
+
+    createdAt: Timestamp
+payments
+
+Mặc dù hiện tại chỉ trả 1 lần.
+
+payments
+  payment_001
+
+    invoiceId: "invoice_001"
+
+    roomId: "room_001"
+
+    amount: 1245000
+
+    paymentDate: Timestamp
+
+    paymentMethod: "CASH"
+
+Sau này mở rộng không cần migrate DB.
+
+Báo cáo
+
+Firestore không mạnh về aggregate như SQL.
+
+Mình sẽ tạo thêm collection:
+
+monthlyReports
+monthlyReports
+  2026_05
+
+    totalRevenue: 3500000
+
+    unpaidAmount: 500000
+
+    occupiedRooms: 2
+
+    totalRooms: 3
+
+    occupancyRate: 66.67
+
+    electricConsumption: 120
+
+    waterConsumption: 30
+
+Collection này được cập nhật bởi:
+
+Cloud Functions
+Cron Job
+Backend NestJS
+
+
+
+roomPrices
+  roomPrice_001
+
+    roomId: "room_001"
+
+    price: 1000000
+
+    effectiveFrom: "2025-01-01"
+
+    effectiveTo: "2026-12-31"
+
+    createdAt: Timestamp
+
+Sau khi tăng giá:
+
+roomPrices
+  roomPrice_002
+
+    roomId: "room_001"
+
+    price: 1200000
+
+    effectiveFrom: "2027-01-01"
+
+    effectiveTo: null
+
+    createdAt: Timestamp
