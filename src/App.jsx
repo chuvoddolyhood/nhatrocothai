@@ -37,14 +37,6 @@ const theme = createTheme({
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
 
-  // const [tenants, setTenants] = useState([
-  //   { id: '1', name: 'Nguyễn Văn A', phone: '0901234567', idCard: '079123456789', moveInDate: '2024-01-15', roomNumber: '101', roomId: '1' },
-  //   { id: '2', name: 'Trần Thị B', phone: '0902345678', idCard: '079234567890', moveInDate: '2024-02-01', roomNumber: '102', roomId: '2' },
-  //   { id: '3', name: 'Lê Văn C', phone: '0903456789', idCard: '079345678901', moveInDate: '2024-03-10', roomNumber: '201', roomId: '4' },
-  //   { id: '4', name: 'Phạm Thị D', phone: '0904567890', idCard: '079456789012', moveInDate: '2024-02-15', roomNumber: '202', roomId: '5' },
-  //   { id: '5', name: 'Hoàng Văn E', phone: '0905678901', idCard: '079567890123', moveInDate: '2024-04-01', roomNumber: '301', roomId: '7' },
-  // ]);
-
   // const [bills, setBills] = useState([
   //   {
   //     id: '1',
@@ -136,30 +128,6 @@ export default function App() {
   //   },
   // ]);
 
-  // const handleAddTenant = (tenant) => {
-  //   const newTenant = { ...tenant, id: Date.now().toString() };
-  //   setTenants([...tenants, newTenant]);
-
-  //   setRooms(rooms.map(room =>
-  //     room.id === tenant.roomId ? { ...room, status: 'occupied' } : room
-  //   ));
-  // };
-
-  // const handleUpdateTenant = (id, updates) => {
-  //   setTenants(tenants.map(tenant => tenant.id === id ? { ...tenant, ...updates } : tenant));
-  // };
-
-  // const handleDeleteTenant = (id) => {
-  //   const tenant = tenants.find(t => t.id === id);
-  //   setTenants(tenants.filter(t => t.id !== id));
-
-  //   if (tenant) {
-  //     setRooms(rooms.map(room =>
-  //       room.id === tenant.roomId ? { ...room, status: 'empty' } : room
-  //     ));
-  //   }
-  // };
-
   // const handleCreateBill = (bill) => {
   //   const electricTotal = (bill.electricCurrent - bill.electricPrevious) * bill.electricPrice;
   //   const waterTotal = (bill.waterCurrent - bill.waterPrevious) * bill.waterPrice;
@@ -199,21 +167,35 @@ export default function App() {
   //   actualRevenue,
   // };
 
+  const renderContent = () => {
+    switch (currentView) {
+      // case 'dashboard':
+      //   return <DashboardPage />;
+
+      case 'rooms':
+        return <RoomListPage />;
+
+      case 'tenants':
+        return <TenantListPage />;
+
+      // case 'billing':
+      //   return <InvoiceListPage />;
+
+      // case 'reports':
+      //   return <ReportingDashboard />;
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
         {/* {currentView === 'dashboard' && <DashboardPage stats={stats} />} */}
-        {currentView === 'rooms' && <RoomListPage />}
-        {/* {currentView === 'tenants' && (
-          <TenantListPage
-            tenants={tenants}
-            availableRooms={rooms.filter(r => r.status === 'empty').map(r => ({ id: r.id, number: r.number }))}
-            onAddTenant={handleAddTenant}
-            onUpdateTenant={handleUpdateTenant}
-            onDeleteTenant={handleDeleteTenant}
-          />
-        )}
+        {renderContent()}
+        {/* 
         {currentView === 'billing' && (
           <InvoiceListPage
             bills={bills}
