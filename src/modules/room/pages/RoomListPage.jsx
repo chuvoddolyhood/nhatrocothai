@@ -8,7 +8,7 @@ import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
 
-export function RoomListPage() {
+export function RoomListPage({ onViewChange }) {
   const [open, setOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
@@ -102,7 +102,7 @@ export function RoomListPage() {
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-          <Header title={"Quản lý phòng"} description={`${rooms.length} phòng tổng cộng`} />
+          <Header title={"Quản lý phòng"} description={`${rooms.length} phòng tổng cộng`} onViewChange={onViewChange} />
 
           <div className="grid grid-cols-1 gap-4">
             {rooms.map((room) => (

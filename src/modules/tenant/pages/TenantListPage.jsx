@@ -7,7 +7,7 @@ import { TenantService } from '../services/TenantService';
 import { TenantFormDialog } from '../components/TenantFormDialog';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 
-export function TenantListPage() {
+export function TenantListPage({ onViewChange }) {
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
 
@@ -72,7 +72,7 @@ export function TenantListPage() {
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-          <Header title={"Khách thuê"} description={`${tenants.length} khách thuê`} />
+          <Header title={"Khách thuê"} description={`${tenants.length} khách thuê`} onViewChange={onViewChange} />
 
           <div className="grid grid-cols-1 gap-4">
             {tenants.map((tenant, index) => (
