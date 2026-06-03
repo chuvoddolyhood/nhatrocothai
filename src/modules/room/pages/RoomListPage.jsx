@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, Card, CardContent, Chip, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, Home } from 'lucide-react';
 import Header from '../../../shared/components/ui/Header';
-import RoomInfoItem from '../components/RoomInfoItem';
+import InfoItem from '../../../shared/components/ui/InfoItem';
 import RoomFormDialog from '../components/RoomFormDialog';
 import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
@@ -137,27 +137,13 @@ export function RoomListPage() {
 
                 <CardContent className="p-4">
                   <div className="grid grid-cols-2 gap-3 mb-4">
-                    <RoomInfoItem
+                    <InfoItem
                       label="Giá phòng"
                       value={formatCurrency(room.currentPrice)}
                     />
 
-                    {room.electricMeterCode && (
-                      <RoomInfoItem
-                        label="Đồng hồ điện"
-                        value={room.electricMeterCode}
-                      />
-                    )}
-
-                    {room.waterMeterCode && (
-                      <RoomInfoItem
-                        label="Đồng hồ nước"
-                        value={room.waterMeterCode}
-                      />
-                    )}
-
                     {room.area && (
-                      <RoomInfoItem
+                      <InfoItem
                         label="Diện tích"
                         value={`${room.area} m²`}
                       />
