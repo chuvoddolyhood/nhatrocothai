@@ -7,6 +7,7 @@ import { TenantListPage } from './modules/tenant/pages/TenantListPage';
 import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
 import { ReportingDashboard } from './modules/dashboard/components/ReportingDashboard';
 import { RoomService } from './modules/room/services/RoomService';
+import { ContractListPage } from './modules/contract/pages/ContractListPage';
 
 const theme = createTheme({
   palette: {
@@ -173,10 +174,13 @@ export default function App() {
       //   return <DashboardPage />;
 
       case 'rooms':
-        return <RoomListPage />;
+        return <RoomListPage onViewChange={setCurrentView} />;
 
       case 'tenants':
-        return <TenantListPage />;
+        return <TenantListPage onViewChange={setCurrentView} />;
+
+      // case 'contracts':
+      //   return <ContractListPage onViewChange={setCurrentView} />;
 
       // case 'billing':
       //   return <InvoiceListPage />;
