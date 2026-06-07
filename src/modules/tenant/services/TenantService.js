@@ -1,24 +1,23 @@
-import { collection, addDoc, updateDoc, doc, serverTimestamp, getDocs, getDoc, query, where, orderBy } from "firebase/firestore";
-import { db } from "../../../firebase/config";
+import { supabase } from "../../../supabase/config";
+import { toCamelCase } from "../../../supabase/caseUtils";
+import { TenantStatus } from "../constants/TenantStatus";
 
-// Tên collection trên Firestore
-const COLLECTION_NAME = "tenants";
-const tenantsCollectionRef = collection(db, COLLECTION_NAME);
+// Tên bảng trên Supabase
+const TABLE_NAME = "tenants";
 
 export const TenantService = {
     // Lấy danh sách khách thuê
     async getTenants() {
         try {
-            const q = query(
-                tenantsCollectionRef,
-                where("status", "!=", "ARCHIVED"),
-            );
-            const querySnapshot = await getDocs(q);
-            const tenants = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select("*")
+                .neq("status", TenantStatus.MOVED_OUT)
+                .order("created_at", { ascending: true });
 
+            if (error) throw error;
+
+            const tenants = data.map(toCamelCase);
             return { success: true, data: tenants };
         } catch (error) {
             console.error("Lỗi khi lấy danh sách khách thuê: ", error);
@@ -29,11 +28,16 @@ export const TenantService = {
     // Lấy thông tin chi tiết một khách thuê
     async getTenantById(tenantId) {
         try {
-            const tenantDoc = doc(db, COLLECTION_NAME, tenantId);
-            const docSnap = await getDoc(tenantDoc);
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select("*")
+                .eq("id", tenantId)
+                .single();
 
-            if (docSnap.exists()) {
-                return { success: true, data: { id: docSnap.id, ...docSnap.data() } };
+            if (error) throw error;
+
+            if (data) {
+                return { success: true, data: toCamelCase(data) };
             } else {
                 return { success: false, error: "Không tìm thấy khách thuê" };
             }
@@ -47,21 +51,29 @@ export const TenantService = {
     async addTenant(tenantData) {
         try {
             const newTenant = {
-                fullName: tenantData.fullName || '',
+                full_name: tenantData.fullName || '',
                 phone: tenantData.phone || '',
-                citizenId: tenantData.citizenId || '',
-                birthDate: tenantData.birthDate || '',
-                permanentAddress: tenantData.permanentAddress || '',
-                citizenIdFrontUrl: tenantData.citizenIdFrontUrl || '',
-                citizenIdBackUrl: tenantData.citizenIdBackUrl || '',
+                citizen_id: tenantData.citizenId || '',
+                birth_date: tenantData.birthDate || '',
+                permanent_address: tenantData.permanentAddress || '',
+                citizen_id_front_url: tenantData.citizenIdFrontUrl || '',
+                citizen_id_back_url: tenantData.citizenIdBackUrl || '',
                 status: tenantData.status || 'ACTIVE',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                created_by: tenantData.createdBy || null,
+                updated_by: tenantData.updatedBy || null
             };
 
-            const docRef = await addDoc(tenantsCollectionRef, newTenant);
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .insert([newTenant])
+                .select()
+                .single();
 
-            return { success: true, id: docRef.id, ...newTenant };
+            if (error) throw error;
+
+            return { success: true, ...toCamelCase(data) };
         } catch (error) {
             console.error("Lỗi khi thêm khách thuê mới: ", error);
             return { success: false, error: error.message };
@@ -71,37 +83,47 @@ export const TenantService = {
     // Cập nhật thông tin khách thuê
     async updateTenant(tenantId, tenantData) {
         try {
-            const tenantDoc = doc(db, COLLECTION_NAME, tenantId);
             const updatedTenant = {
-                fullName: tenantData.fullName !== undefined ? tenantData.fullName : '',
+                full_name: tenantData.fullName !== undefined ? tenantData.fullName : '',
                 phone: tenantData.phone !== undefined ? tenantData.phone : '',
-                citizenId: tenantData.citizenId !== undefined ? tenantData.citizenId : '',
-                birthDate: tenantData.birthDate !== undefined ? tenantData.birthDate : '',
-                permanentAddress: tenantData.permanentAddress !== undefined ? tenantData.permanentAddress : '',
-                citizenIdFrontUrl: tenantData.citizenIdFrontUrl !== undefined ? tenantData.citizenIdFrontUrl : '',
-                citizenIdBackUrl: tenantData.citizenIdBackUrl !== undefined ? tenantData.citizenIdBackUrl : '',
-                status: tenantData.status !== undefined ? tenantData.status : 'ACTIVE',
-                updatedAt: serverTimestamp()
+                citizen_id: tenantData.citizenId !== undefined ? tenantData.citizenId : '',
+                birth_date: tenantData.birthDate !== undefined ? tenantData.birthDate : '',
+                permanent_address: tenantData.permanentAddress !== undefined ? tenantData.permanentAddress : '',
+                citizen_id_front_url: tenantData.citizenIdFrontUrl !== undefined ? tenantData.citizenIdFrontUrl : '',
+                citizen_id_back_url: tenantData.citizenIdBackUrl !== undefined ? tenantData.citizenIdBackUrl : '',
+                status: tenantData.status !== undefined ? tenantData.status : TenantStatus.ACTIVE,
+                updated_at: new Date().toISOString(),
+                updated_by: tenantData.updatedBy || null
             };
 
-            await updateDoc(tenantDoc, updatedTenant);
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .update(updatedTenant)
+                .eq("id", tenantId)
+                .select()
+                .single();
 
-            return { success: true, id: tenantId, ...updatedTenant };
+            if (error) throw error;
+
+            return { success: true, ...toCamelCase(data) };
         } catch (error) {
             console.error("Lỗi khi cập nhật khách thuê: ", error);
             return { success: false, error: error.message };
         }
     },
 
-    // Xóa mềm khách thuê (Chuyển status sang ARCHIVED)
+    // Xóa mềm khách thuê (Chuyển status sang MOVED_OUT)
     async softDeleteTenant(tenantId) {
         try {
-            const tenantDoc = doc(db, COLLECTION_NAME, tenantId);
+            const { error } = await supabase
+                .from(TABLE_NAME)
+                .update({
+                    status: TenantStatus.MOVED_OUT,
+                    updated_at: new Date().toISOString()
+                })
+                .eq("id", tenantId);
 
-            await updateDoc(tenantDoc, {
-                status: 'ARCHIVED',
-                updatedAt: serverTimestamp()
-            });
+            if (error) throw error;
 
             return { success: true };
         } catch (error) {

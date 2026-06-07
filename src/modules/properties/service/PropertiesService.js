@@ -1,25 +1,22 @@
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../../../firebase/config';
+import { supabase } from '../../../supabase/config';
+import { toCamelCase } from '../../../supabase/caseUtils';
 
-// Tên collection trên Firestore
-const COLLECTION_NAME = "properties";
-const propertiesCollectionRef = collection(db, COLLECTION_NAME);
+// Tên bảng trên Supabase
+const TABLE_NAME = "properties";
 
 export const PropertiesService = {
 
     // Lấy danh sách properties
     async getProperties() {
         try {
-            const q = query(
-                propertiesCollectionRef,
-                where("status", "==", "ACTIVE")
-            );
-            const querySnapshot = await getDocs(q);
-            const properties = querySnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select("name")
+                .eq("status", "ACTIVE");
 
+            if (error) throw error;
+
+            const properties = data.map(toCamelCase);
             return { success: true, data: properties };
 
         } catch (error) {
