@@ -57,7 +57,6 @@ export function RoomListPage({ onViewChange }) {
         roomId: room.roomId || '',
         status: room.status || 'AVAILABLE',
         currentContractId: room.currentContractId || '',
-        currentTenantNames: room.currentTenantNames || [],
         currentPrice: room.currentPrice || '',
         floor: room.floor || '',
         area: room.area || 0,

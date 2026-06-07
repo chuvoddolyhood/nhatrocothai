@@ -6,6 +6,7 @@ import Loading from '../../../shared/components/ui/Loading';
 import { TenantService } from '../services/TenantService';
 import { TenantFormDialog } from '../components/TenantFormDialog';
 import InfoItem from '../../../shared/components/ui/InfoItem';
+import { TenantStatusLabel } from '../constants/TenantStatus';
 
 export function TenantListPage({ onViewChange }) {
   const [loading, setLoading] = useState(true);
@@ -151,7 +152,7 @@ export function TenantListPage({ onViewChange }) {
                       fullWidth
                       sx={{ borderRadius: '8px' }}
                     >
-                      Xóa
+                      {TenantStatusLabel.MOVED_OUT}
                     </Button>
                   </div>
                 </CardContent>

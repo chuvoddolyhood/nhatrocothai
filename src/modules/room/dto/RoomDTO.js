@@ -3,7 +3,6 @@ export const INITIAL_ROOM_FORM_DATA = {
     roomId: '',
     status: 'AVAILABLE',
     currentContractId: '',
-    currentTenantNames: [],
     currentPrice: '',
     floor: '',
     area: '',
