@@ -1,6 +1,7 @@
 import { supabase } from "../../../supabase/config";
 import { toCamelCase } from "../../../supabase/caseUtils";
 import { RoomStatus } from "../constants/RoomStatus";
+import { notificationRef } from "../../../shared/contexts/NotificationContext";
 
 // Tên bảng trên Supabase
 const TABLE_NAME = "rooms";
@@ -25,7 +26,7 @@ export const RoomService = {
             return { success: true, data: rooms };
 
         } catch (error) {
-            console.error("Lỗi khi lấy danh sách phòng: ", error);
+            notificationRef.current?.showError(error);
             return { success: false, error: error.message };
         }
     },
@@ -62,7 +63,7 @@ export const RoomService = {
             };
 
         } catch (error) {
-            console.error("Lỗi khi thêm phòng mới: ", error);
+            notificationRef.current?.showError(error);
             return { success: false, error: error.message };
         }
     },
@@ -98,7 +99,7 @@ export const RoomService = {
             };
 
         } catch (error) {
-            console.error("Lỗi khi cập nhật phòng: ", error);
+            notificationRef.current?.showError(error);
             return { success: false, error: error.message };
         }
     },
@@ -118,7 +119,7 @@ export const RoomService = {
 
             return { success: true };
         } catch (error) {
-            console.error("Lỗi khi xóa phòng:", error);
+            notificationRef.current?.showError(error);
             return { success: false, error: error.message };
         }
     }

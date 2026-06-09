@@ -6,10 +6,12 @@ import { TenantService } from '../services/TenantService';
 import { TenantFormDialog } from '../components/TenantFormDialog';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import { TenantStatusLabel } from '../constants/TenantStatus';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 export function TenantListPage({ setHeaderConfig }) {
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
+  const { showSuccess, showError } = useNotification();
 
   const [open, setOpen] = useState(false);
   const [editingTenant, setEditingTenant] = useState(null);
@@ -27,7 +29,7 @@ export function TenantListPage({ setHeaderConfig }) {
         });
       }
     } catch (error) {
-      console.error(error);
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -48,19 +50,35 @@ export function TenantListPage({ setHeaderConfig }) {
   };
 
   const handleSubmit = async (formData) => {
-    if (editingTenant) {
-      await TenantService.updateTenant(editingTenant.id, formData);
-    } else {
-      await TenantService.addTenant(formData);
+    try {
+      let result;
+      if (editingTenant) {
+        result = await TenantService.updateTenant(editingTenant.id, formData);
+      } else {
+        result = await TenantService.addTenant(formData);
+      }
+      
+      if (result.success) {
+        showSuccess(editingTenant ? "Cập nhật khách thuê thành công" : "Thêm khách thuê thành công");
+        fetchTenants();
+        handleClose();
+      } else {
+        showError(result.error);
+      }
+    } catch (error) {
+      showError(error);
     }
-    fetchTenants();
-    handleClose();
   };
 
   const onDeleteTenant = async (id) => {
     if (window.confirm('Bạn có chắc chắn muốn xóa khách thuê này?')) {
-      await TenantService.softDeleteTenant(id);
-      fetchTenants();
+      const result = await TenantService.softDeleteTenant(id);
+      if (result.success) {
+        showSuccess("Đã chuyển khách thuê sang trạng thái Đã dời đi");
+        fetchTenants();
+      } else {
+        showError(result.error);
+      }
     }
   };
 

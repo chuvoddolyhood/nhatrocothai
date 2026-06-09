@@ -6,6 +6,7 @@ import RoomFormDialog from '../components/RoomFormDialog';
 import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 export function RoomListPage({ setHeaderConfig }) {
   const [open, setOpen] = useState(false);
@@ -13,6 +14,7 @@ export function RoomListPage({ setHeaderConfig }) {
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showSuccess, showError } = useNotification();
 
   const fetchRooms = async () => {
     try {
@@ -41,7 +43,7 @@ export function RoomListPage({ setHeaderConfig }) {
         });
       }
     } catch (error) {
-      console.error(error);
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -94,9 +96,10 @@ export function RoomListPage({ setHeaderConfig }) {
     const response = await RoomService.softDeleteRoom(roomId);
 
     if (response.success) {
+      showSuccess("Xóa phòng thành công");
       await fetchRooms();
     } else {
-      console.error("Lỗi khi xóa phòng:", response.error);
+      showError(response.error);
     }
   };
 
