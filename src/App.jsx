@@ -8,6 +8,7 @@ import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
 import { ReportingDashboard } from './modules/dashboard/components/ReportingDashboard';
 import { RoomService } from './modules/room/services/RoomService';
 import { ContractListPage } from './modules/contract/pages/ContractListPage';
+import Header from './shared/components/ui/Header';
 
 const theme = createTheme({
   palette: {
@@ -37,6 +38,12 @@ const theme = createTheme({
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
+  const [headerConfig, setHeaderConfig] = useState(null);
+
+  const handleViewChange = (view) => {
+    setCurrentView(view);
+    setHeaderConfig(null);
+  };
 
   // const [bills, setBills] = useState([
   //   {
@@ -174,13 +181,13 @@ export default function App() {
       //   return <DashboardPage />;
 
       case 'rooms':
-        return <RoomListPage onViewChange={setCurrentView} />;
+        return <RoomListPage setHeaderConfig={setHeaderConfig} />;
 
       case 'tenants':
-        return <TenantListPage onViewChange={setCurrentView} />;
+        return <TenantListPage setHeaderConfig={setHeaderConfig} />;
 
       case 'contracts':
-        return <ContractListPage onViewChange={setCurrentView} />;
+        return <ContractListPage setHeaderConfig={setHeaderConfig} />;
 
       // case 'billing':
       //   return <InvoiceListPage />;
@@ -197,6 +204,12 @@ export default function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+        <div className="p-4 pb-0">
+          <Header
+            data={headerConfig || {}}
+            onViewChange={handleViewChange}
+          />
+        </div>
         {/* {currentView === 'dashboard' && <DashboardPage stats={stats} />} */}
         {renderContent()}
         {/* 
@@ -218,7 +231,7 @@ export default function App() {
 
         <MobileNavigation
           currentView={currentView}
-          onViewChange={(view) => setCurrentView(view)}
+          onViewChange={handleViewChange}
         />
       </div>
     </ThemeProvider>

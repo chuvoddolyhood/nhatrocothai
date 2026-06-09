@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button, Card, CardContent, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, User, Phone, CreditCard, Calendar, MapPin } from 'lucide-react';
-import Header from '../../../shared/components/ui/Header';
 import Loading from '../../../shared/components/ui/Loading';
 import { TenantService } from '../services/TenantService';
 import { TenantFormDialog } from '../components/TenantFormDialog';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import { TenantStatusLabel } from '../constants/TenantStatus';
 
-export function TenantListPage({ onViewChange }) {
+export function TenantListPage({ setHeaderConfig }) {
   const [loading, setLoading] = useState(true);
   const [tenants, setTenants] = useState([]);
 
@@ -22,6 +21,10 @@ export function TenantListPage({ onViewChange }) {
 
       if (response.success) {
         setTenants(response.data);
+        setHeaderConfig({
+          title: "Khách thuê",
+          description: `${response.data.length} khách thuê`
+        });
       }
     } catch (error) {
       console.error(error);
@@ -73,7 +76,6 @@ export function TenantListPage({ onViewChange }) {
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-          <Header title={"Khách thuê"} description={`${tenants.length} khách thuê`} onViewChange={onViewChange} />
 
           <div className="grid grid-cols-1 gap-4">
             {tenants.map((tenant, index) => (
