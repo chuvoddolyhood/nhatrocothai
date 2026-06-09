@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Button, Card, CardContent, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, FileSignature, Calendar, DollarSign, Users } from 'lucide-react';
-import Header from '../../../shared/components/ui/Header';
 import Loading from '../../../shared/components/ui/Loading';
 import { ContractService } from '../services/ContractService';
 
-export function ContractListPage({ onViewChange }) {
+export function ContractListPage({ setHeaderConfig }) {
   const [loading, setLoading] = useState(true);
   // const [contracts, setContracts] = useState([]);
 
@@ -50,7 +49,6 @@ export function ContractListPage({ onViewChange }) {
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-          <Header title={"Hợp đồng"} description={`${contracts.length} hợp đồng`} onViewChange={onViewChange} />
 
           {/* <div className="grid grid-cols-1 gap-4">
             {contracts.length === 0 ? (

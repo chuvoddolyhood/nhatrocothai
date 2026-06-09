@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Menu, Home, Building2, Users, FileSignature, DollarSign, BarChart3, Settings, LogOut } from 'lucide-react';
 
-const Header = ({ title, description, onViewChange }) => {
+const Header = ({ data, onViewChange }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
 
     const toggleDrawer = (open) => (event) => {
@@ -33,8 +33,8 @@ const Header = ({ title, description, onViewChange }) => {
     return (
         <div className="mb-6 flex justify-between items-start">
             <div>
-                <h1 className="text-2xl font-bold mb-1 text-gray-800">{title}</h1>
-                <p className="text-gray-600 text-sm">{description}</p>
+                <h1 className="text-2xl font-bold mb-1 text-gray-800">{data.title}</h1>
+                <p className="text-gray-600 text-sm">{data.description}</p>
             </div>
 
             <IconButton

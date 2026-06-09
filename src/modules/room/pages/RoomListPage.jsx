@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, CardContent, Chip, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, Home } from 'lucide-react';
-import Header from '../../../shared/components/ui/Header';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import RoomFormDialog from '../components/RoomFormDialog';
 import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
 
-export function RoomListPage({ onViewChange }) {
+export function RoomListPage({ setHeaderConfig }) {
   const [open, setOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
@@ -36,6 +35,10 @@ export function RoomListPage({ onViewChange }) {
         });
 
         setRooms(sortedRooms);
+        setHeaderConfig({
+          title: "Quản lý phòng",
+          description: `${sortedRooms.length} phòng tổng cộng`
+        });
       }
     } catch (error) {
       console.error(error);
@@ -101,7 +104,6 @@ export function RoomListPage({ onViewChange }) {
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-          <Header title={"Quản lý phòng"} description={`${rooms.length} phòng tổng cộng`} onViewChange={onViewChange} />
 
           <div className="grid grid-cols-1 gap-4">
             {rooms.map((room) => (
