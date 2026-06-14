@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Menu, Home, Building2, Users, FileSignature, DollarSign, BarChart3, Settings, LogOut } from 'lucide-react';
+import { menuConfig } from '../common/MenuConfig';
 
 const Header = ({ data, onViewChange }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
@@ -50,24 +51,13 @@ const Header = ({ data, onViewChange }) => {
         setDrawerOpen(false);
     };
 
-    const mainFunctions = [
-        { id: 'dashboard', label: 'Bảng điều khiển', icon: <Home size={20} /> },
-        { id: 'rooms', label: 'Quản lý phòng', icon: <Building2 size={20} /> },
-        { id: 'tenants', label: 'Khách thuê', icon: <Users size={20} /> },
-        { id: 'contracts', label: 'Hợp đồng', icon: <FileSignature size={20} /> },
-        { id: 'billing', label: 'Hóa đơn', icon: <DollarSign size={20} /> },
-        { id: 'reports', label: 'Báo cáo', icon: <BarChart3 size={20} /> },
-    ];
-
     return (
         <header
-            className={`fixed top-0 left-0 right-0 z-40 px-4 py-4 transition-all duration-300 ease-in-out ${
-                isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-            } ${
-                isScrolled
+            className={`fixed top-0 left-0 right-0 z-40 px-4 py-4 transition-all duration-300 ease-in-out ${isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+                } ${isScrolled
                     ? 'bg-white/85 backdrop-blur-md border-b border-indigo-100/50 shadow-sm'
                     : 'bg-transparent border-b border-transparent'
-            }`}
+                }`}
         >
             <div className="max-w-7xl mx-auto flex justify-between items-start">
                 <div>
@@ -108,17 +98,22 @@ const Header = ({ data, onViewChange }) => {
                 <Divider sx={{ my: 1 }} />
 
                 <List sx={{ px: 2 }}>
-                    {mainFunctions.map((item) => (
-                        <ListItem key={item.id} disablePadding sx={{ mb: 0.5 }}>
+                    {menuConfig.map(({ id, label, icon: Icon }) => (
+                        <ListItem key={id} disablePadding sx={{ mb: 0.5 }}>
                             <ListItemButton
-                                onClick={() => handleNavigation(item.id)}
+                                onClick={() => handleNavigation(id)}
                                 sx={{ borderRadius: '10px' }}
                             >
                                 <ListItemIcon sx={{ minWidth: 40, color: '#6366f1' }}>
-                                    {item.icon}
+                                    <Icon size={20} />
                                 </ListItemIcon>
+
                                 <ListItemText
-                                    primary={<span style={{ fontSize: '0.9rem', fontWeight: 500 }}>{item.label}</span>}
+                                    primary={
+                                        <span style={{ fontSize: '0.9rem', fontWeight: 500 }}>
+                                            {label}
+                                        </span>
+                                    }
                                 />
                             </ListItemButton>
                         </ListItem>
