@@ -3,138 +3,185 @@ import { Button, Card, CardContent, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, FileSignature, Calendar, DollarSign, Users } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 import { ContractService } from '../services/ContractService';
+import { RoomService } from '../../room/services/RoomService';
+import { TenantService } from '../../tenant/services/TenantService';
+import { useNotification } from '../../../shared/hooks/useNotification';
+import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
+import InfoItem from '../../../shared/components/ui/InfoItem';
+import { ContractFormDialog } from '../components/ContractFormDialog';
 
-export function ContractListPage({ setHeaderConfig }) {
+export function ContractListPage({ view, setHeaderConfig }) {
   const [loading, setLoading] = useState(true);
-  // const [contracts, setContracts] = useState([]);
+  const [contracts, setContracts] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [tenants, setTenants] = useState([]);
 
-  // const fetchContracts = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await ContractService.getContracts();
+  const [open, setOpen] = useState(false);
+  const [editingContract, setEditingContract] = useState(null);
+  const { showSuccess, showError } = useNotification();
 
-  //     if (response.success) {
-  //       setContracts(response.data);
-  //     }
-  //   } catch (error) {
-  //     console.error(error);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+  const fetchContracts = async () => {
+    try {
+      setLoading(true);
+      const [contractRes, roomRes, tenantRes] = await Promise.all([
+        ContractService.getContracts(),
+        RoomService.getRooms(),
+        TenantService.getTenants(),
+      ]);
 
-  // useEffect(() => {
-  //   fetchContracts();
-  // }, []);
+      if (contractRes.success) {
+        setContracts(contractRes.data);
+        setHeaderConfig({
+          title: getMenuLabel(view),
+          description: `${contractRes.data.length} hợp đồng tổng cộng`
+        });
+      }
+      if (roomRes.success) setRooms(roomRes.data);
+      if (tenantRes.success) setTenants(tenantRes.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // const handleOpen = (contract) => {
-  //   // TODO: Mở form thêm/sửa hợp đồng
-  //   console.log("Open form for:", contract);
-  // };
+  useEffect(() => {
+    fetchContracts();
+  }, []);
 
-  // const onDeleteContract = async (id) => {
-  //   // TODO: Xóa hợp đồng / Chấm dứt hợp đồng
-  //   console.log("Delete contract:", id);
-  // };
+  const handleOpen = (contract) => {
+    setEditingContract(contract || null);
+    setOpen(true);
+  };
 
-  // const gradients = [
-  //   'from-emerald-400 to-teal-500',
-  //   'from-cyan-400 to-blue-500',
-  //   'from-violet-400 to-fuchsia-500',
-  //   'from-amber-400 to-orange-500',
-  //   'from-rose-400 to-red-500',
-  // ];
+  const handleClose = () => {
+    setOpen(false);
+    setEditingContract(null);
+  };
+
+  const onDeleteContract = async (id) => {
+    if (window.confirm("Bạn có chắc chắn muốn kết thúc (chấm dứt) hợp đồng này?")) {
+      try {
+        const result = await ContractService.updateContractStatus(id, 'TERMINATED');
+        if (result.success) {
+          showSuccess("Đã chấm dứt hợp đồng thành công");
+          fetchContracts();
+        } else {
+          showError(result.error || "Thao tác thất bại");
+        }
+      } catch (error) {
+        showError(error);
+      }
+    }
+  };
+
+  const gradients = [
+    'from-emerald-400 to-teal-500',
+    'from-cyan-400 to-blue-500',
+    'from-violet-400 to-fuchsia-500',
+    'from-amber-400 to-orange-500',
+    'from-rose-400 to-red-500',
+  ];
 
   return (
     <>
       {loading ? <Loading /> :
         <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
 
-          {/* <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {contracts.length === 0 ? (
               <div className="text-center py-10 text-gray-500">Chưa có hợp đồng nào.</div>
-            ) : contracts.map((contract, index) => (
-              <Card
-                key={contract.id}
-                sx={{
-                  borderRadius: '16px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  overflow: 'hidden',
-                }}
-              >
-                <div className={`bg-gradient-to-r ${gradients[index % gradients.length]} p-4 text-white`}>
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center">
-                        <FileSignature size={24} />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-medium">Hợp đồng phòng {contract.roomId}</h3>
-                        <span className="text-xs bg-white/20 px-2 py-1 rounded-full mt-1 inline-block">
-                          {contract.status === 'ACTIVE' ? 'Đang hiệu lực' :
-                            contract.status === 'EXPIRED' ? 'Đã hết hạn' : 'Đã chấm dứt'}
-                        </span>
+            ) : contracts.map((contract, index) => {
+              const room = rooms.find(r => r.id === contract.roomId);
+              const roomName = room ? room.roomId : contract.roomId;
+
+              const tenant = tenants.find(t => t.id === contract.representativeTenantId);
+              const tenantName = tenant ? tenant.fullName : (contract.representativeTenantId || '---');
+
+              return (
+                <Card
+                  key={contract.id}
+                  sx={{
+                    borderRadius: '16px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div className={`bg-gradient-to-r ${gradients[index % gradients.length]} p-4 text-white`}>
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white/30 rounded-full flex items-center justify-center">
+                          <FileSignature size={24} />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-medium">Hợp đồng phòng {roomName}</h3>
+                          <span className="text-xs bg-white/20 px-2 py-1 rounded-full mt-1 inline-block">
+                            {contract.status === 'ACTIVE' ? 'Đang hiệu lực' :
+                              contract.status === 'EXPIRED' ? 'Đã hết hạn' : 'Đã chấm dứt'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <InfoItem
-                      icon={<DollarSign size={18} className="text-emerald-600" />}
-                      label="Tiền cọc"
-                      value={`${contract.depositAmount?.toLocaleString()}đ`}
-                    />
+                  <CardContent className="p-4">
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <InfoItem
+                        icon={<DollarSign size={18} className="text-emerald-600" />}
+                        label="Tiền cọc"
+                        value={`${contract.depositAmount?.toLocaleString()}đ`}
+                      />
 
-                    <InfoItem
-                      icon={<DollarSign size={18} className="text-blue-600" />}
-                      label="Giá thuê"
-                      value={`${contract.monthlyRent?.toLocaleString()}đ/tháng`}
-                    />
+                      <InfoItem
+                        icon={<DollarSign size={18} className="text-blue-600" />}
+                        label="Giá thuê"
+                        value={`${contract.monthlyRent?.toLocaleString()}đ/tháng`}
+                      />
 
-                    <InfoItem
-                      icon={<Calendar size={18} className="text-indigo-600" />}
-                      label="Ngày bắt đầu"
-                      value={contract.startDate ? new Date(contract.startDate.toDate ? contract.startDate.toDate() : contract.startDate).toLocaleDateString('vi-VN') : '---'}
-                    />
+                      <InfoItem
+                        icon={<Calendar size={18} className="text-indigo-600" />}
+                        label="Ngày bắt đầu"
+                        value={contract.startDate ? new Date(contract.startDate.toDate ? contract.startDate.toDate() : contract.startDate).toLocaleDateString('vi-VN') : '---'}
+                      />
 
-                    <RoomInfoItem
-                      icon={<Users size={18} className="text-orange-600" />}
-                      label="Đại diện"
-                      value={contract.representativeTenantId || '---'}
-                    />
-                  </div>
+                      <InfoItem
+                        icon={<Users size={18} className="text-orange-600" />}
+                        label="Đại diện"
+                        value={tenantName}
+                      />
+                    </div>
 
-                  <div className="flex gap-2">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      startIcon={<Edit size={16} />}
-                      onClick={() => handleOpen(contract)}
-                      fullWidth
-                      sx={{ borderRadius: '8px' }}
-                    >
-                      Sửa
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="error"
-                      startIcon={<Trash2 size={16} />}
-                      onClick={() => onDeleteContract(contract.id)}
-                      fullWidth
-                      sx={{ borderRadius: '8px' }}
-                    >
-                      Kết thúc
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div> */}
+                    <div className="flex gap-2">
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Edit size={16} />}
+                        onClick={() => handleOpen(contract)}
+                        fullWidth
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Sửa
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Trash2 size={16} />}
+                        onClick={() => onDeleteContract(contract.id)}
+                        disabled={contract.status === 'TERMINATED'}
+                        fullWidth
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Kết thúc
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
 
-          {/* <Fab
+          <Fab
             color="primary"
             aria-label="add"
             onClick={() => handleOpen()}
@@ -149,7 +196,14 @@ export function ContractListPage({ setHeaderConfig }) {
             }}
           >
             <Plus />
-          </Fab> */}
+          </Fab>
+
+          <ContractFormDialog
+            open={open}
+            onClose={handleClose}
+            onSuccess={fetchContracts}
+            editingContract={editingContract}
+          />
         </div>
       }
     </>

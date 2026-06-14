@@ -45,136 +45,6 @@ export default function App() {
     setHeaderConfig(null);
   };
 
-  // const [bills, setBills] = useState([
-  //   {
-  //     id: '1',
-  //     roomId: '1',
-  //     roomNumber: '101',
-  //     tenantName: 'Nguyễn Văn A',
-  //     month: '2026-05',
-  //     roomPrice: 2500000,
-  //     electricPrevious: 150,
-  //     electricCurrent: 180,
-  //     electricPrice: 3500,
-  //     waterPrevious: 20,
-  //     waterCurrent: 25,
-  //     waterPrice: 15000,
-  //     otherServices: [{ name: 'Internet', price: 100000 }],
-  //     total: 2780000,
-  //     paid: true,
-  //     paidDate: '2026-05-05',
-  //   },
-  //   {
-  //     id: '2',
-  //     roomId: '2',
-  //     roomNumber: '102',
-  //     tenantName: 'Trần Thị B',
-  //     month: '2026-05',
-  //     roomPrice: 2500000,
-  //     electricPrevious: 140,
-  //     electricCurrent: 165,
-  //     electricPrice: 3500,
-  //     waterPrevious: 18,
-  //     waterCurrent: 22,
-  //     waterPrice: 15000,
-  //     otherServices: [{ name: 'Internet', price: 100000 }],
-  //     total: 2747500,
-  //     paid: false,
-  //   },
-  //   {
-  //     id: '3',
-  //     roomId: '4',
-  //     roomNumber: '201',
-  //     tenantName: 'Lê Văn C',
-  //     month: '2026-05',
-  //     roomPrice: 2500000,
-  //     electricPrevious: 160,
-  //     electricCurrent: 190,
-  //     electricPrice: 3500,
-  //     waterPrevious: 22,
-  //     waterCurrent: 27,
-  //     waterPrice: 15000,
-  //     otherServices: [{ name: 'Internet', price: 100000 }],
-  //     total: 2780000,
-  //     paid: true,
-  //     paidDate: '2026-05-03',
-  //   },
-  //   {
-  //     id: '4',
-  //     roomId: '5',
-  //     roomNumber: '202',
-  //     tenantName: 'Phạm Thị D',
-  //     month: '2026-05',
-  //     roomPrice: 2500000,
-  //     electricPrevious: 135,
-  //     electricCurrent: 155,
-  //     electricPrice: 3500,
-  //     waterPrevious: 19,
-  //     waterCurrent: 23,
-  //     waterPrice: 15000,
-  //     otherServices: [{ name: 'Internet', price: 100000 }],
-  //     total: 2730000,
-  //     paid: false,
-  //   },
-  //   {
-  //     id: '5',
-  //     roomId: '7',
-  //     roomNumber: '301',
-  //     tenantName: 'Hoàng Văn E',
-  //     month: '2026-05',
-  //     roomPrice: 2500000,
-  //     electricPrevious: 145,
-  //     electricCurrent: 170,
-  //     electricPrice: 3500,
-  //     waterPrevious: 21,
-  //     waterCurrent: 26,
-  //     waterPrice: 15000,
-  //     otherServices: [{ name: 'Internet', price: 100000 }],
-  //     total: 2762500,
-  //     paid: true,
-  //     paidDate: '2026-05-01',
-  //   },
-  // ]);
-
-  // const handleCreateBill = (bill) => {
-  //   const electricTotal = (bill.electricCurrent - bill.electricPrevious) * bill.electricPrice;
-  //   const waterTotal = (bill.waterCurrent - bill.waterPrevious) * bill.waterPrice;
-  //   const servicesTotal = bill.otherServices.reduce((sum, s) => sum + s.price, 0);
-  //   const total = bill.roomPrice + electricTotal + waterTotal + servicesTotal;
-
-  //   const newBill = {
-  //     ...bill,
-  //     id: Date.now().toString(),
-  //     total,
-  //   };
-
-  //   setBills([...bills, newBill]);
-  // };
-
-  // const handleMarkPaid = (id, paidDate) => {
-  //   setBills(bills.map(bill =>
-  //     bill.id === id ? { ...bill, paid: true, paidDate } : bill
-  //   ));
-  // };
-
-  // // const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
-  // const currentMonth = new Date().toISOString().slice(0, 7);
-  // const currentMonthBills = bills.filter(b => b.month === currentMonth);
-  // const paidBills = currentMonthBills.filter(b => b.paid).length;
-  // const unpaidBills = currentMonthBills.filter(b => !b.paid).length;
-  // const expectedRevenue = currentMonthBills.reduce((sum, b) => sum + b.total, 0);
-  // const actualRevenue = currentMonthBills.filter(b => b.paid).reduce((sum, b) => sum + b.total, 0);
-
-  // const stats = {
-  //   totalRooms: rooms.length,
-  //   occupiedRooms,
-  //   emptyRooms: rooms.filter(r => r.status === 'empty').length,
-  //   paidThisMonth: paidBills,
-  //   unpaidThisMonth: unpaidBills,
-  //   expectedRevenue,
-  //   actualRevenue,
-  // };
-
   const renderContent = () => {
     switch (currentView) {
       // case 'dashboard':
@@ -187,7 +57,7 @@ export default function App() {
         return <TenantListPage setHeaderConfig={setHeaderConfig} />;
 
       case 'contracts':
-        return <ContractListPage setHeaderConfig={setHeaderConfig} />;
+        return <ContractListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
       // case 'billing':
       //   return <InvoiceListPage />;
@@ -208,24 +78,8 @@ export default function App() {
           data={headerConfig || {}}
           onViewChange={handleViewChange}
         />
-        {/* {currentView === 'dashboard' && <DashboardPage stats={stats} />} */}
+
         {renderContent()}
-        {/* 
-        {currentView === 'billing' && (
-          <InvoiceListPage
-            bills={bills}
-            rooms={rooms.map(r => ({ id: r.id, number: r.number, price: r.price }))}
-            tenants={tenants}
-            onCreateBill={handleCreateBill}
-            onMarkPaid={handleMarkPaid}
-          />
-        )}
-        {currentView === 'reports' && (
-          <ReportingDashboard
-            bills={bills}
-            rooms={rooms}
-          />
-        )} */}
 
         <MobileNavigation
           currentView={currentView}
