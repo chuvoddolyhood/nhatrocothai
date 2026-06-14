@@ -37,7 +37,8 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
         return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     };
 
-    const handleSubmit = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         if (editingRoom) {
             const result = await RoomService.updateRoom(editingRoom.id, formData);
 
@@ -80,88 +81,95 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
 
     return (
         <Dialog open={open} onClose={onClose} fullScreen>
-            <DialogTitle>
-                {editingRoom ? 'Sửa phòng' : 'Thêm phòng mới'}
-            </DialogTitle>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                <DialogTitle>
+                    {editingRoom ? 'Sửa phòng' : 'Thêm phòng mới'}
+                </DialogTitle>
 
-            <DialogContent>
-                <div className="flex flex-col gap-6 pt-2">
-                    <TextField
-                        label="Số phòng"
-                        fullWidth
-                        value={formData.roomId}
-                        onChange={handleChange('roomId')}
-                    />
+                <DialogContent>
+                    <div className="flex flex-col gap-6 pt-2">
+                        <TextField
+                            label="Số phòng"
+                            fullWidth
+                            required
+                            value={formData.roomId ?? ''}
+                            onChange={handleChange('roomId')}
+                            slotProps={{ htmlInput: { maxLength: 50 } }}
+                        />
 
-                    <FormControl fullWidth>
-                        <InputLabel>Trạng thái</InputLabel>
+                        <FormControl fullWidth>
+                            <InputLabel>Trạng thái</InputLabel>
 
-                        <Select
-                            value={formData.status}
-                            label="Trạng thái"
-                            onChange={handleChange('status')}
-                        >
-                            <MenuItem value="AVAILABLE">Trống</MenuItem>
-                            <MenuItem value="OCCUPIED">Đang ở</MenuItem>
-                            <MenuItem value="MAINTENANCE">Sửa chữa</MenuItem>
-                        </Select>
-                    </FormControl>
+                            <Select
+                                value={formData.status ?? 'AVAILABLE'}
+                                label="Trạng thái"
+                                onChange={handleChange('status')}
+                            >
+                                <MenuItem value="AVAILABLE">Trống</MenuItem>
+                                <MenuItem value="OCCUPIED">Đang ở</MenuItem>
+                                <MenuItem value="MAINTENANCE">Sửa chữa</MenuItem>
+                            </Select>
+                        </FormControl>
 
-                    <TextField
-                        label="Giá phòng (₫)"
-                        type="text"
-                        fullWidth
-                        value={formatCurrency(formData.currentPrice)}
-                        onChange={handleCurrencyChange('currentPrice')}
-                    />
+                        <TextField
+                            label="Giá phòng (₫)"
+                            type="text"
+                            fullWidth
+                            required
+                            value={formatCurrency(formData.currentPrice)}
+                            onChange={handleCurrencyChange('currentPrice')}
+                        />
 
-                    <FormControl fullWidth>
-                        <InputLabel>Khu trọ</InputLabel>
+                        <FormControl fullWidth required>
+                            <InputLabel>Khu trọ</InputLabel>
 
-                        <Select
-                            value={formData.propertyId}
-                            label="Khu trọ"
-                            onChange={handleChange('propertyId')}
-                        >
-                            {properties.map((property) => (
-                                <MenuItem
-                                    key={property.id}
-                                    value={property.id}
-                                >
-                                    {property.name}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
+                            <Select
+                                value={formData.propertyId ?? ''}
+                                label="Khu trọ"
+                                onChange={handleChange('propertyId')}
+                            >
+                                {properties.map((property) => (
+                                    <MenuItem
+                                        key={property.id}
+                                        value={property.id}
+                                    >
+                                        {property.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
 
-                    <TextField
-                        label="Tầng"
-                        type="number"
-                        fullWidth
-                        value={formData.floor}
-                        onChange={handleNumberChange('floor')}
-                    />
+                        <TextField
+                            label="Tầng"
+                            type="number"
+                            fullWidth
+                            value={formData.floor ?? ''}
+                            onChange={handleNumberChange('floor')}
+                            slotProps={{ htmlInput: { maxLength: 50 } }}
+                        />
 
-                    <TextField
-                        label="Diện tích (m²)"
-                        type="number"
-                        fullWidth
-                        value={formData.area}
-                        onChange={handleNumberChange('area')}
-                    />
-                </div>
-            </DialogContent>
+                        <TextField
+                            label="Diện tích (m²)"
+                            type="number"
+                            fullWidth
+                            value={formData.area ?? ''}
+                            onChange={handleNumberChange('area')}
+                            slotProps={{ htmlInput: { step: "0.01", max: "99999999.99" } }}
+                        />
+                    </div>
+                </DialogContent>
 
-            <DialogActions>
-                <Button onClick={onClose}> Hủy </Button>
+                <DialogActions>
+                    <Button onClick={onClose}> Hủy </Button>
 
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                >
-                    {editingRoom ? 'Cập nhật' : 'Thêm'}
-                </Button>
-            </DialogActions>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                    >
+                        {editingRoom ? 'Cập nhật' : 'Thêm'}
+                    </Button>
+                </DialogActions>
+            </form>
         </Dialog>
     )
 }

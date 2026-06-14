@@ -13,7 +13,8 @@ export const RoomService = {
             const { data, error } = await supabase
                 .from(TABLE_NAME)
                 .select("*")
-                .neq("status", RoomStatus.ARCHIVED);
+                .neq("status", RoomStatus.ARCHIVED)
+                .order("created_at", { ascending: true });
 
             if (error) throw error;
 

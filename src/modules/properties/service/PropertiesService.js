@@ -11,7 +11,7 @@ export const PropertiesService = {
         try {
             const { data, error } = await supabase
                 .from(TABLE_NAME)
-                .select("name")
+                .select("id, name")
                 .eq("status", "ACTIVE");
 
             if (error) throw error;
