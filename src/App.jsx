@@ -203,13 +203,11 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-        <div className="p-4 pb-0">
-          <Header
-            data={headerConfig || {}}
-            onViewChange={handleViewChange}
-          />
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pt-24">
+        <Header
+          data={headerConfig || {}}
+          onViewChange={handleViewChange}
+        />
         {/* {currentView === 'dashboard' && <DashboardPage stats={stats} />} */}
         {renderContent()}
         {/* 

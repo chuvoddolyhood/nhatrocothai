@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, CardContent, Chip, Fab } from '@mui/material';
-import { Plus, Edit, Trash2, Home } from 'lucide-react';
+import { Plus, Edit, Trash2, Home, Eye } from 'lucide-react';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import RoomFormDialog from '../components/RoomFormDialog';
 import { RoomService } from '../services/RoomService';
@@ -146,7 +146,7 @@ export function RoomListPage({ setHeaderConfig }) {
                       value={formatCurrency(room.currentPrice)}
                     />
 
-                    {room.area && (
+                    {room.area != null && (
                       <InfoItem
                         label="Diện tích"
                         value={`${room.area} m²`}
@@ -158,6 +158,18 @@ export function RoomListPage({ setHeaderConfig }) {
                     <Button
                       size="small"
                       variant="outlined"
+                      color="secondary"
+                      startIcon={<Eye size={16} />}
+                      onClick={() => handleOpen(room)}
+                      fullWidth
+                      sx={{ borderRadius: '8px' }}
+                    >
+                      Xem
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="warning"
                       startIcon={<Edit size={16} />}
                       onClick={() => handleOpen(room)}
                       fullWidth
