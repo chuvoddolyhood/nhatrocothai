@@ -6,6 +6,6 @@ export const TenantStatus = {
 
 export const TenantStatusLabel = {
     ACTIVE: "Đang thuê",
-    MOVED_OUT: "Đã chuyển đi",
-    BLOCKED: "Bị khóa"
+    MOVED_OUT: "Chuyển đi",
+    BLOCKED: "Khóa"
 };
