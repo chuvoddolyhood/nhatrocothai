@@ -4,4 +4,6 @@ export const INITIAL_TENANT_FORM_DATA = {
     citizenId: '',
     birthDate: '',
     permanentAddress: '',
+    citizenIdFrontUrl: '',
+    citizenIdBackUrl: '',
 };

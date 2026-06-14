@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Card, CardContent, Fab } from '@mui/material';
-import { Plus, Edit, Trash2, User, Phone, CreditCard, Calendar, MapPin } from 'lucide-react';
+import { Plus, Edit, User, Phone, CreditCard, Calendar, MapPin, UserRoundX } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 import { TenantService } from '../services/TenantService';
 import { TenantFormDialog } from '../components/TenantFormDialog';
@@ -47,27 +47,6 @@ export function TenantListPage({ setHeaderConfig }) {
   const handleClose = () => {
     setOpen(false);
     setEditingTenant(null);
-  };
-
-  const handleSubmit = async (formData) => {
-    try {
-      let result;
-      if (editingTenant) {
-        result = await TenantService.updateTenant(editingTenant.id, formData);
-      } else {
-        result = await TenantService.addTenant(formData);
-      }
-      
-      if (result.success) {
-        showSuccess(editingTenant ? "Cập nhật khách thuê thành công" : "Thêm khách thuê thành công");
-        fetchTenants();
-        handleClose();
-      } else {
-        showError(result.error);
-      }
-    } catch (error) {
-      showError(error);
-    }
   };
 
   const onDeleteTenant = async (id) => {
@@ -161,16 +140,26 @@ export function TenantListPage({ setHeaderConfig }) {
                       fullWidth
                       sx={{ borderRadius: '8px' }}
                     >
+                      Xem
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Edit size={16} />}
+                      onClick={() => handleOpen(tenant)}
+                      fullWidth
+                      sx={{ borderRadius: '8px' }}
+                    >
                       Sửa
                     </Button>
                     <Button
                       size="small"
                       variant="outlined"
                       color="error"
-                      startIcon={<Trash2 size={16} />}
+                      startIcon={<UserRoundX size={16} />}
                       onClick={() => onDeleteTenant(tenant.id)}
                       fullWidth
-                      sx={{ borderRadius: '8px' }}
+                      sx={{ borderRadius: '8px', fontSize: '0.65rem', }}
                     >
                       {TenantStatusLabel.MOVED_OUT}
                     </Button>
@@ -200,14 +189,8 @@ export function TenantListPage({ setHeaderConfig }) {
           <TenantFormDialog
             open={open}
             onClose={handleClose}
-            onSubmit={handleSubmit}
-            initialData={editingTenant ? {
-              fullName: editingTenant.fullName || '',
-              phone: editingTenant.phone || '',
-              citizenId: editingTenant.citizenId || '',
-              birthDate: editingTenant.birthDate || '',
-              permanentAddress: editingTenant.permanentAddress || '',
-            } : null}
+            onSuccess={fetchTenants}
+            editingTenant={editingTenant}
           />
         </div>
       }
