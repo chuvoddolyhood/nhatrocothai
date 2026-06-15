@@ -7,5 +7,5 @@ export const ContractStatus = {
 export const ContractStatusLabel = {
     ACTIVE: "Hiệu lực",
     EXPIRED: "Hết hạn",
-    TERMINATED: "Đã chấm dứt"
+    TERMINATED: "Chấm dứt",
 };

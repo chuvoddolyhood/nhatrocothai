@@ -1,9 +1,7 @@
 import { supabase } from "../../../supabase/config";
 import { toCamelCase } from "../../../supabase/caseUtils";
-
-// Tên bảng trên Supabase
-const TABLE_NAME = "contracts";
-const JUNCTION_TABLE = "contract_tenants";
+import { CONTRACT_TENANTS, CONTRACTS, ROOMS } from "../../../supabase/DatabaseModel";
+import { ContractStatus } from "../constants/ContractStatus";
 
 export const ContractService = {
     // Đăng ký (Thêm mới) hợp đồng
@@ -19,18 +17,18 @@ export const ContractService = {
                 start_date: contractData.startDate || new Date().toISOString().split('T')[0],
                 end_date: contractData.endDate || null,
                 status: contractData.status || 'ACTIVE',
-                created_by: contractData.createdBy || null,
+                created_by: 1,
             };
 
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(CONTRACTS)
                 .insert([newContract])
                 .select()
                 .single();
 
             if (error) throw error;
 
-            // Thêm tenant vào bảng contract_tenants (junction table)
+            // Thêm tenant vào bảng contract_tenants
             const allTenantIds = [...new Set([
                 ...(contractData.tenantIds || []),
                 contractData.representativeTenantId
@@ -43,7 +41,7 @@ export const ContractService = {
                 }));
 
                 const { error: junctionError } = await supabase
-                    .from(JUNCTION_TABLE)
+                    .from(CONTRACT_TENANTS)
                     .insert(junctionRows);
 
                 if (junctionError) {
@@ -51,8 +49,23 @@ export const ContractService = {
                 }
             }
 
-            // TODO: Ở đây bạn có thể thêm logic gọi RoomService.updateRoom để cập nhật 
-            // currentContractId cho phòng và đổi status phòng thành "OCCUPIED" (nếu cần).
+            // Cập nhật currentContractId và status cho phòng vào bảng Rooms
+            if (contractData.roomId) {
+                const isContractActive = !contractData.status || contractData.status === 'ACTIVE';
+                const { error: roomUpdateError } = await supabase
+                    .from(ROOMS)
+                    .update({
+                        status: isContractActive ? 'OCCUPIED' : 'AVAILABLE',
+                        current_contract_id: isContractActive ? data.id : null,
+                        updated_by: 1,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', contractData.roomId);
+
+                if (roomUpdateError) {
+                    console.error("Lỗi khi cập nhật trạng thái phòng:", roomUpdateError);
+                }
+            }
 
             return { success: true, ...toCamelCase(data) };
         } catch (error) {
@@ -65,8 +78,9 @@ export const ContractService = {
     async getContracts(filters = {}) {
         try {
             let query = supabase
-                .from(TABLE_NAME)
-                .select("*, contract_tenants(tenant_id)");
+                .from(CONTRACTS)
+                .select("*, contract_tenants(tenant_id)")
+                .order("created_at", { ascending: false });
 
             if (filters.status) {
                 query = query.eq("status", filters.status);
@@ -100,7 +114,7 @@ export const ContractService = {
     async getContractById(contractId) {
         try {
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(CONTRACTS)
                 .select("*, contract_tenants(tenant_id)")
                 .eq("id", contractId)
                 .single();
@@ -144,13 +158,13 @@ export const ContractService = {
             Object.entries(contractData).forEach(([key, value]) => {
                 if (value !== undefined && key !== 'tenantIds') {
                     const snakeKey = fieldMap[key] || key;
-                    updatedContract[snakeKey] = value;
+                    updatedContract[snakeKey] = value === '' ? null : value;
                 }
             });
             updatedContract.updated_at = new Date().toISOString();
 
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(CONTRACTS)
                 .update(updatedContract)
                 .eq("id", contractId)
                 .select()
@@ -162,7 +176,7 @@ export const ContractService = {
             if (contractData.tenantIds !== undefined || contractData.representativeTenantId !== undefined) {
                 // Xóa liên kết cũ
                 await supabase
-                    .from(JUNCTION_TABLE)
+                    .from(CONTRACT_TENANTS)
                     .delete()
                     .eq("contract_id", contractId);
 
@@ -181,7 +195,7 @@ export const ContractService = {
                     }));
 
                     await supabase
-                        .from(JUNCTION_TABLE)
+                        .from(CONTRACT_TENANTS)
                         .insert(junctionRows);
                 }
             }
@@ -196,17 +210,42 @@ export const ContractService = {
     // Thay đổi trạng thái hợp đồng (Chấm dứt / Hết hạn)
     async updateContractStatus(contractId, status) {
         try {
+            // Lấy thông tin hợp đồng để biết room_id
+            const { data: contractData, error: fetchError } = await supabase
+                .from(CONTRACTS)
+                .select("room_id")
+                .eq("id", contractId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
             const { error } = await supabase
-                .from(TABLE_NAME)
+                .from(CONTRACTS)
                 .update({
                     status: status, // 'TERMINATED' hoặc 'EXPIRED'
                     updated_at: new Date().toISOString(),
+                    updated_by: 1,
                 })
                 .eq("id", contractId);
 
             if (error) throw error;
 
-            // TODO: Ở đây bạn có thể thêm logic giải phóng phòng khi hợp đồng bị TERMINATED
+            // Giải phóng phòng khi hợp đồng bị TERMINATED
+            if (contractData?.room_id) {
+                const { error: roomUpdateError } = await supabase
+                    .from(ROOMS)
+                    .update({
+                        status: 'AVAILABLE',
+                        current_contract_id: null,
+                        updated_by: 1,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", contractData.room_id);
+
+                if (roomUpdateError) {
+                    console.error("Lỗi khi giải phóng phòng:", roomUpdateError);
+                }
+            }
 
             return { success: true };
         } catch (error) {
