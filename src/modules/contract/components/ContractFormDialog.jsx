@@ -9,6 +9,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
+import { RoomStatus } from '../../room/constants/RoomStatus';
+import { ContractStatusLabel } from '../constants/ContractStatus';
 
 const INITIAL_CONTRACT_FORM_DATA = {
     propertyId: '',
@@ -89,6 +91,18 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
         }));
     };
 
+    const handleRoomChange = (e) => {
+        const selectedRoomId = e.target.value;
+        const selectedRoom = rooms.find(r => r.id === selectedRoomId);
+
+        setFormData(prev => ({
+            ...prev,
+            roomId: selectedRoomId,
+            monthlyRent: selectedRoom ? (selectedRoom.currentPrice || '') : prev.monthlyRent,
+            depositAmount: selectedRoom ? (selectedRoom.currentPrice || '') : prev.depositAmount,
+        }));
+    };
+
     const handleCurrencyChange = (field) => (e) => {
         const value = e.target.value.replace(/\D/g, '');
         setFormData({
@@ -126,8 +140,10 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
         }
     };
 
-    // Filter rooms belonging to the selected property
-    const filteredRooms = rooms.filter(room => room.propertyId === formData.propertyId);
+    const filteredRooms = rooms.filter(room =>
+        room.propertyId === formData.propertyId &&
+        (room.status === RoomStatus.AVAILABLE || room.id === formData.roomId)
+    );
 
     return (
         <Dialog open={open} onClose={onClose} fullScreen>
@@ -157,7 +173,7 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                                 labelId="room-select-label"
                                 value={formData.roomId}
                                 label="Phòng"
-                                onChange={(e) => setFormData({ ...formData, roomId: e.target.value })}
+                                onChange={handleRoomChange}
                             >
                                 {filteredRooms.map((room) => (
                                     <MenuItem key={room.id} value={room.id}>
@@ -211,19 +227,19 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                         </FormControl>
 
                         <TextField
+                            label="Giá thuê phòng (₫/tháng)"
+                            fullWidth
+                            disabled
+                            value={formatCurrency(formData.monthlyRent)}
+                            onChange={handleCurrencyChange('monthlyRent')}
+                        />
+
+                        <TextField
                             label="Tiền đặt cọc (₫)"
                             fullWidth
                             required
                             value={formatCurrency(formData.depositAmount)}
                             onChange={handleCurrencyChange('depositAmount')}
-                        />
-
-                        <TextField
-                            label="Giá thuê phòng (₫/tháng)"
-                            fullWidth
-                            required
-                            value={formatCurrency(formData.monthlyRent)}
-                            onChange={handleCurrencyChange('monthlyRent')}
                         />
 
                         <TextField
@@ -244,6 +260,7 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Ngày bắt đầu hợp đồng"
+                                format="DD-MM-YYYY"
                                 value={formData.startDate ? dayjs(formData.startDate) : null}
                                 onChange={(newValue) =>
                                     setFormData({
@@ -263,6 +280,7 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DatePicker
                                 label="Ngày kết thúc hợp đồng (Không bắt buộc)"
+                                format="DD-MM-YYYY"
                                 value={formData.endDate ? dayjs(formData.endDate) : null}
                                 onChange={(newValue) =>
                                     setFormData({
@@ -287,9 +305,9 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                                     label="Trạng thái hợp đồng"
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                                 >
-                                    <MenuItem value="ACTIVE">Hiệu lực</MenuItem>
-                                    <MenuItem value="EXPIRED">Hết hạn</MenuItem>
-                                    <MenuItem value="TERMINATED">Đã chấm dứt</MenuItem>
+                                    <MenuItem value="ACTIVE">{ContractStatusLabel.ACTIVE}</MenuItem>
+                                    <MenuItem value="EXPIRED">{ContractStatusLabel.EXPIRED}</MenuItem>
+                                    <MenuItem value="TERMINATED">{ContractStatusLabel.TERMINATED}</MenuItem>
                                 </Select>
                             </FormControl>
                         )}

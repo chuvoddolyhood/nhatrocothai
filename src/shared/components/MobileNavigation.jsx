@@ -1,5 +1,5 @@
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import { Home, Building2, Users, DollarSign, BarChart3 } from 'lucide-react';
+import { Home, Building2, Users, DollarSign, BarChart3, FileSignature } from 'lucide-react';
 
 export function MobileNavigation({ currentView, onViewChange }) {
   const menuItems = [
@@ -7,7 +7,7 @@ export function MobileNavigation({ currentView, onViewChange }) {
     { id: 'rooms', label: 'Phòng', icon: Building2 },
     { id: 'tenants', label: 'Khách', icon: Users },
     { id: 'billing', label: 'Hóa đơn', icon: DollarSign },
-    { id: 'reports', label: 'Báo cáo', icon: BarChart3 },
+    { id: 'contracts', label: 'Hợp đồng', icon: FileSignature },
   ];
 
   return (
@@ -32,7 +32,7 @@ export function MobileNavigation({ currentView, onViewChange }) {
           height: '70px',
           '& .MuiBottomNavigationAction-root': {
             minWidth: 'auto',
-            padding: '8px 12px',
+            padding: '8px 5px',
           },
           '& .MuiBottomNavigationAction-label': {
             fontSize: '0.7rem',

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button, Card, CardContent, Fab } from '@mui/material';
-import { Plus, Edit, Trash2, FileSignature, Calendar, DollarSign, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, FileSignature, Calendar, DollarSign, Users, Shredder } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 import { ContractService } from '../services/ContractService';
 import { RoomService } from '../../room/services/RoomService';
@@ -9,6 +9,7 @@ import { useNotification } from '../../../shared/hooks/useNotification';
 import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import { ContractFormDialog } from '../components/ContractFormDialog';
+import { ContractStatus, ContractStatusLabel } from '../constants/ContractStatus';
 
 export function ContractListPage({ view, setHeaderConfig }) {
   const [loading, setLoading] = useState(true);
@@ -22,9 +23,8 @@ export function ContractListPage({ view, setHeaderConfig }) {
 
   const fetchContracts = async () => {
     try {
-      setLoading(true);
       const [contractRes, roomRes, tenantRes] = await Promise.all([
-        ContractService.getContracts(),
+        ContractService.getContracts({ status: ContractStatus.ACTIVE }),
         RoomService.getRooms(),
         TenantService.getTenants(),
       ]);
@@ -62,7 +62,7 @@ export function ContractListPage({ view, setHeaderConfig }) {
   const onDeleteContract = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn kết thúc (chấm dứt) hợp đồng này?")) {
       try {
-        const result = await ContractService.updateContractStatus(id, 'TERMINATED');
+        const result = await ContractService.updateContractStatus(id, ContractStatus.TERMINATED);
         if (result.success) {
           showSuccess("Đã chấm dứt hợp đồng thành công");
           fetchContracts();
@@ -127,15 +127,15 @@ export function ContractListPage({ view, setHeaderConfig }) {
                   <CardContent className="p-4">
                     <div className="grid grid-cols-2 gap-3 mb-4">
                       <InfoItem
-                        icon={<DollarSign size={18} className="text-emerald-600" />}
-                        label="Tiền cọc"
-                        value={`${contract.depositAmount?.toLocaleString()}đ`}
+                        icon={<DollarSign size={18} className="text-blue-600" />}
+                        label="Giá thuê"
+                        value={`${contract.monthlyRent?.toLocaleString()}đ`}
                       />
 
                       <InfoItem
-                        icon={<DollarSign size={18} className="text-blue-600" />}
-                        label="Giá thuê"
-                        value={`${contract.monthlyRent?.toLocaleString()}đ/tháng`}
+                        icon={<DollarSign size={18} className="text-emerald-600" />}
+                        label="Tiền cọc"
+                        value={`${contract.depositAmount?.toLocaleString()}đ`}
                       />
 
                       <InfoItem
@@ -160,19 +160,29 @@ export function ContractListPage({ view, setHeaderConfig }) {
                         fullWidth
                         sx={{ borderRadius: '8px' }}
                       >
+                        Xem
+                      </Button>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<Edit size={16} />}
+                        onClick={() => handleOpen(contract)}
+                        fullWidth
+                        sx={{ borderRadius: '8px' }}
+                      >
                         Sửa
                       </Button>
                       <Button
                         size="small"
                         variant="outlined"
                         color="error"
-                        startIcon={<Trash2 size={16} />}
+                        startIcon={<Shredder size={16} />}
                         onClick={() => onDeleteContract(contract.id)}
-                        disabled={contract.status === 'TERMINATED'}
+                        disabled={contract.status === ContractStatus.TERMINATED}
                         fullWidth
-                        sx={{ borderRadius: '8px' }}
+                        sx={{ borderRadius: '8px', fontSize: '0.65rem' }}
                       >
-                        Kết thúc
+                        {ContractStatusLabel.TERMINATED}
                       </Button>
                     </div>
                   </CardContent>
