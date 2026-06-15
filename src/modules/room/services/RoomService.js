@@ -2,16 +2,15 @@ import { supabase } from "../../../supabase/config";
 import { toCamelCase } from "../../../supabase/caseUtils";
 import { RoomStatus } from "../constants/RoomStatus";
 import { notificationRef } from "../../../shared/contexts/NotificationContext";
-
-// Tên bảng trên Supabase
-const TABLE_NAME = "rooms";
+import { RoomPriceService } from "./RoomPriceService";
+import { ROOMS } from "../../../supabase/DatabaseModel";
 
 export const RoomService = {
     // Lấy danh sách phòng
     async getRooms() {
         try {
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(ROOMS)
                 .select("*")
                 .neq("status", RoomStatus.ARCHIVED)
                 .order("created_at", { ascending: true });
@@ -50,12 +49,17 @@ export const RoomService = {
             };
 
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(ROOMS)
                 .insert([newRoom])
                 .select()
                 .single();
 
             if (error) throw error;
+
+            // Insert initial price into room_prices history
+            if (data.current_price) {
+                await RoomPriceService.addPriceHistory(data.id, data.current_price);
+            }
 
             return {
                 success: true,
@@ -72,6 +76,15 @@ export const RoomService = {
     // Cập nhật phòng
     async updateRoom(roomId, roomData) {
         try {
+            // Lấy giá hiện tại trước khi cập nhật
+            const { data: oldRoom, error: fetchError } = await supabase
+                .from(ROOMS)
+                .select("current_price")
+                .eq("id", roomId)
+                .single();
+
+            if (fetchError) throw fetchError;
+
             const updatedRoom = {
                 property_id: roomData.propertyId || null,
                 room_code: roomData.roomId || '',
@@ -85,13 +98,22 @@ export const RoomService = {
             };
 
             const { data, error } = await supabase
-                .from(TABLE_NAME)
+                .from(ROOMS)
                 .update(updatedRoom)
                 .eq("id", roomId)
                 .select()
                 .single();
 
             if (error) throw error;
+
+            // Nếu giá thay đổi → đóng bản ghi giá cũ và tạo bản ghi giá mới
+            const oldPrice = oldRoom.current_price;
+            const newPrice = data.current_price;
+
+            if (newPrice !== oldPrice) {
+                await RoomPriceService.closePriceHistory(roomId);
+                await RoomPriceService.addPriceHistory(roomId, newPrice);
+            }
 
             return {
                 success: true,
@@ -109,7 +131,7 @@ export const RoomService = {
     async softDeleteRoom(roomId) {
         try {
             const { error } = await supabase
-                .from(TABLE_NAME)
+                .from(ROOMS)
                 .update({
                     status: RoomStatus.ARCHIVED,
                     updated_at: new Date().toISOString(),

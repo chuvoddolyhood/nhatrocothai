@@ -51,7 +51,7 @@ export default function App() {
       //   return <DashboardPage />;
 
       case 'rooms':
-        return <RoomListPage setHeaderConfig={setHeaderConfig} />;
+        return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
       case 'tenants':
         return <TenantListPage setHeaderConfig={setHeaderConfig} />;

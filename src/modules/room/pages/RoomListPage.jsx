@@ -7,8 +7,10 @@ import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
 import { useNotification } from '../../../shared/hooks/useNotification';
+import { RoomStatus } from '../constants/RoomStatus';
+import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
 
-export function RoomListPage({ setHeaderConfig }) {
+export function RoomListPage({ view, setHeaderConfig }) {
   const [open, setOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
@@ -38,7 +40,7 @@ export function RoomListPage({ setHeaderConfig }) {
 
         setRooms(sortedRooms);
         setHeaderConfig({
-          title: "Quản lý phòng",
+          title: getMenuLabel(view),
           description: `${sortedRooms.length} phòng tổng cộng`
         });
       }
@@ -166,17 +168,19 @@ export function RoomListPage({ setHeaderConfig }) {
                     >
                       Xem
                     </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="warning"
-                      startIcon={<Edit size={16} />}
-                      onClick={() => handleOpen(room)}
-                      fullWidth
-                      sx={{ borderRadius: '8px' }}
-                    >
-                      Sửa
-                    </Button>
+                    {room.status !== RoomStatus.OCCUPIED &&
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={<Edit size={16} />}
+                        onClick={() => handleOpen(room)}
+                        fullWidth
+                        sx={{ borderRadius: '8px' }}
+                      >
+                        Sửa
+                      </Button>
+                    }
                     <Button
                       size="small"
                       variant="outlined"
