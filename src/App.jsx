@@ -41,8 +41,10 @@ export default function App() {
   const [headerConfig, setHeaderConfig] = useState(null);
 
   const handleViewChange = (view) => {
-    setCurrentView(view);
-    setHeaderConfig(null);
+    if (view !== currentView) {
+      setCurrentView(view);
+      setHeaderConfig(null);
+    }
   };
 
   const renderContent = () => {
