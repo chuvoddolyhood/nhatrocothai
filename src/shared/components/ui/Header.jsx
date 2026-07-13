@@ -62,7 +62,7 @@ const Header = ({ data, onViewChange }) => {
             <div className="max-w-7xl mx-auto flex justify-between items-start">
                 <div>
                     <h1 className="text-2xl font-bold mb-1 text-gray-800">
-                        {data?.title || "NhaTroCoThai"}
+                        {data?.title || "Nhà Trọ Cô Thái"}
                     </h1>
                     {data?.description && (
                         <p className="text-gray-600 text-sm">{data.description}</p>
@@ -91,7 +91,7 @@ const Header = ({ data, onViewChange }) => {
                 }}
             >
                 <div className="p-5 pb-2">
-                    <h2 className="text-xl font-bold text-indigo-600 mb-1">NhaTroCoThai</h2>
+                    <h2 className="text-xl font-bold text-indigo-600 mb-1">Nhà Trọ Cô Thái</h2>
                     <p className="text-sm text-gray-500">Menu chức năng</p>
                 </div>
 
