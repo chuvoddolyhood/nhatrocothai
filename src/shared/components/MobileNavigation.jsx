@@ -6,8 +6,8 @@ export function MobileNavigation({ currentView, onViewChange }) {
     { id: 'dashboard', label: 'Chính', icon: Home },
     { id: 'rooms', label: 'Phòng', icon: Building2 },
     { id: 'tenants', label: 'Khách', icon: Users },
-    { id: 'billing', label: 'Hóa đơn', icon: DollarSign },
     { id: 'contracts', label: 'Hợp đồng', icon: FileSignature },
+    { id: 'billing', label: 'Hóa đơn', icon: DollarSign },
   ];
 
   return (

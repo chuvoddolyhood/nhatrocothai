@@ -164,10 +164,15 @@ CREATE TABLE public.meter_readings (
   verified boolean DEFAULT false,
   verified_by bigint,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by bigint,
   CONSTRAINT meter_readings_pkey PRIMARY KEY (id),
   CONSTRAINT meter_readings_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
   CONSTRAINT meter_readings_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
-  CONSTRAINT meter_readings_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES public.users(id)
+  CONSTRAINT meter_readings_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES public.users(id),
+  CONSTRAINT meter_readings_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT meter_readings_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 11. Bảng invoices (Hóa đơn)
@@ -190,15 +195,19 @@ CREATE TABLE public.invoices (
   discount numeric DEFAULT 0,
   total_amount numeric NOT NULL,
   room_code character varying,
-  representative_tenant_name character varying,
   status character varying DEFAULT 'UNPAID'::character varying,
   due_date date,
   paid_at timestamp with time zone,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by bigint,
   CONSTRAINT invoices_pkey PRIMARY KEY (id),
   CONSTRAINT invoices_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
   CONSTRAINT invoices_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
-  CONSTRAINT invoices_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id)
+  CONSTRAINT invoices_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
+  CONSTRAINT invoices_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT invoices_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 12. Bảng invoice_tenants (Liên kết hóa đơn - khách thuê)
@@ -222,10 +231,15 @@ CREATE TABLE public.payments (
   paid_at timestamp with time zone NOT NULL,
   note text,
   created_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_at timestamp with time zone,
+  updated_by bigint,
   CONSTRAINT payments_pkey PRIMARY KEY (id),
   CONSTRAINT payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id),
   CONSTRAINT payments_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
-  CONSTRAINT payments_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id)
+  CONSTRAINT payments_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id),
+  CONSTRAINT payments_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT payments_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 14. Bảng monthly_reports (Báo cáo tháng)

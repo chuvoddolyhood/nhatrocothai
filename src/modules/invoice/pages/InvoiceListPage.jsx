@@ -1,197 +1,384 @@
-import { useState } from 'react';
-import { Button, Dialog, Card, CardContent, Chip, Fab } from '@mui/material';
-import { Plus, Zap, Droplet, Eye, Check } from 'lucide-react';
-import { MeterReadingForm } from '../../meter-reading/components/MeterReadingForm';
-import { InvoicePreview } from '../components/InvoicePreview';
-import Header from '../../../shared/components/ui/Header';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Card, CardContent, Fab, CircularProgress, Chip,
+  Button, Select, MenuItem, FormControl, InputLabel,
+} from '@mui/material';
+import { Plus, Eye, Check, Zap, Droplet, Receipt, Edit } from 'lucide-react';
+import Loading from '../../../shared/components/ui/Loading';
+import { InvoiceService } from '../services/InvoiceService';
+import { InvoiceStatusFilter } from '../components/InvoiceStatusFilter';
+import { InvoiceFormDialog } from '../components/InvoiceFormDialog';
+import { InvoiceDetailDialog } from '../components/InvoiceDetailDialog';
+import { InvoicePaymentDialog } from '../components/InvoicePaymentDialog';
+import { InvoiceStatus } from '../constants/InvoiceStatus';
+import { useNotification } from '../../../shared/hooks/useNotification';
+import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
 
-export function InvoiceListPage({ bills, rooms, tenants, onCreateBill, onMarkPaid }) {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [selectedRoom, setSelectedRoom] = useState('');
-  const [meterReadingOpen, setMeterReadingOpen] = useState(null);
-  const [invoicePreview, setInvoicePreview] = useState(null);
+// Gradient cho card (xoay vòng)
+const gradients = [
+  'from-indigo-400 to-purple-500',
+  'from-cyan-400 to-blue-500',
+  'from-amber-400 to-orange-500',
+  'from-violet-400 to-fuchsia-500',
+  'from-teal-400 to-emerald-500',
+];
 
-  const [billData, setBillData] = useState({
-    electricCurrent: 0,
-    waterCurrent: 0,
-    otherServices: [],
-  });
+// Tạo danh sách tháng 12 tháng gần nhất
+function getMonthOptions() {
+  const opts = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = `Tháng ${d.getMonth() + 1}/${d.getFullYear()}`;
+    opts.push({ val, label });
+  }
+  return opts;
+}
 
+const MONTH_OPTIONS = getMonthOptions();
+
+export function InvoiceListPage({ view, setHeaderConfig }) {
   const currentMonth = new Date().toISOString().slice(0, 7);
-  const currentMonthBills = bills.filter(b => b.month === currentMonth);
 
-  const handleSelectRoom = (roomId) => {
-    setSelectedRoom(roomId);
-    const lastBill = bills
-      .filter(b => b.roomId === roomId)
-      .sort((a, b) => b.month.localeCompare(a.month))[0];
+  // Filter state
+  const [monthFilter, setMonthFilter] = useState(currentMonth);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [roomFilter, setRoomFilter] = useState('');
 
-    setBillData({
-      electricCurrent: 0,
-      waterCurrent: 0,
-      otherServices: lastBill?.otherServices || [],
-    });
-  };
+  // Data state
+  const [invoices, setInvoices] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const isFirstLoad = useRef(true);
 
-  const handleMeterReading = (type, reading) => {
-    if (type === 'electric') {
-      setBillData({ ...billData, electricCurrent: reading });
-    } else {
-      setBillData({ ...billData, waterCurrent: reading });
+  // Dialogs
+  const [formOpen, setFormOpen] = useState(false);
+  const [editInvoice, setEditInvoice] = useState(null);
+  const [detailInvoice, setDetailInvoice] = useState(null);
+  const [paymentInvoice, setPaymentInvoice] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  const { showSuccess, showError } = useNotification();
+
+  // ─── Fetch ───────────────────────────────────────────────
+  const fetchInvoices = async (filters = {}) => {
+    try {
+      if (isFirstLoad.current) {
+        setInitialLoading(true);
+      } else {
+        setListLoading(true);
+      }
+
+      const fetchData = isFirstLoad.current
+        ? Promise.all([
+          InvoiceService.getInvoices(filters),
+          InvoiceService.getRoomsForFilter(),
+        ])
+        : Promise.all([
+          InvoiceService.getInvoices(filters),
+          Promise.resolve({ success: true, data: rooms }),
+        ]);
+
+      const [invoiceRes, roomRes] = await fetchData;
+
+      if (invoiceRes.success) {
+        setInvoices(invoiceRes.data);
+        if (setHeaderConfig) {
+          setHeaderConfig({
+            title: getMenuLabel(view) || 'Hóa đơn',
+            description: `${invoiceRes.data.length} hóa đơn`,
+          });
+        }
+      }
+      if (roomRes.success && isFirstLoad.current) {
+        setRooms(roomRes.data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+        setInitialLoading(false);
+      } else {
+        setListLoading(false);
+      }
     }
-    setMeterReadingOpen(null);
   };
 
-  const handleCreateBill = () => {
-    if (!selectedRoom) return;
+  useEffect(() => {
+    const filters = {};
+    if (monthFilter) filters.month = monthFilter;
+    if (statusFilter) filters.status = statusFilter;
+    if (roomFilter) filters.roomId = roomFilter;
+    fetchInvoices(filters);
+  }, [monthFilter, statusFilter, roomFilter]);
 
-    const room = rooms.find(r => r.id === selectedRoom);
-    const tenant = tenants.find(t => t.roomId === selectedRoom);
-    const lastBill = bills
-      .filter(b => b.roomId === selectedRoom)
-      .sort((a, b) => b.month.localeCompare(a.month))[0];
-
-    if (!room || !tenant) return;
-
-    const newBill = {
-      roomId: selectedRoom,
-      roomNumber: room.number,
-      tenantName: tenant.name,
-      month: currentMonth,
-      roomPrice: room.price,
-      electricPrevious: lastBill?.electricCurrent || 0,
-      electricCurrent: billData.electricCurrent,
-      electricPrice: 3500,
-      waterPrevious: lastBill?.waterCurrent || 0,
-      waterCurrent: billData.waterCurrent,
-      waterPrice: 15000,
-      otherServices: billData.otherServices,
-      paid: false,
-    };
-
-    onCreateBill(newBill);
-    setSelectedRoom('');
-    setBillData({
-      electricCurrent: 0,
-      waterCurrent: 0,
-      otherServices: [],
-    });
-    setCreateDialogOpen(false);
+  // ─── Handlers ────────────────────────────────────────────
+  const handleStatusFilterChange = (_, newValue) => {
+    if (newValue !== null) setStatusFilter(newValue);
   };
 
-  const getPreviousReading = (type) => {
-    if (!selectedRoom) return 0;
-    const lastBill = bills
-      .filter(b => b.roomId === selectedRoom)
-      .sort((a, b) => b.month.localeCompare(a.month))[0];
-
-    return type === 'electric' ? lastBill?.electricCurrent || 0 : lastBill?.waterCurrent || 0;
+  const handleMarkPaidClick = (invoice) => {
+    setPaymentInvoice(invoice);
   };
 
-  const selectedRoomData = rooms.find(r => r.id === selectedRoom);
-  const hasReadings = billData.electricCurrent > 0 && billData.waterCurrent > 0;
+  const handleConfirmPayment = async (paymentData) => {
+    if (!paymentInvoice) return;
+    setPaymentLoading(true);
+    try {
+      const result = await InvoiceService.markAsPaid(
+        paymentInvoice.id,
+        paymentInvoice.roomId,
+        paymentData,
+      );
+      if (result.success) {
+        showSuccess('Đã ghi nhận thanh toán thành công!');
+        setPaymentInvoice(null);
+        isFirstLoad.current = false;
+        const filters = {};
+        if (monthFilter) filters.month = monthFilter;
+        if (statusFilter) filters.status = statusFilter;
+        if (roomFilter) filters.roomId = roomFilter;
+        fetchInvoices(filters);
+      } else {
+        showError(result.error || 'Ghi nhận thanh toán thất bại');
+      }
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleFormSuccess = (action) => {
+    isFirstLoad.current = false;
+    const filters = {};
+    if (monthFilter) filters.month = monthFilter;
+    if (statusFilter) filters.status = statusFilter;
+    if (roomFilter) filters.roomId = roomFilter;
+    fetchInvoices(filters);
+
+    if (action === 'delete') {
+      showSuccess('Đã xóa hóa đơn thành công!');
+    } else {
+      showSuccess(action === 'edit' ? 'Cập nhật hóa đơn thành công!' : 'Tạo hóa đơn thành công!');
+    }
+
+    setEditInvoice(null);
+  };
+
+  const handleOpenFormDialog = () => {
+    setEditInvoice(null);
+    setFormOpen(true);
+  };
+
+  const handleCloseFormDialog = () => {
+    setEditInvoice(null);
+    setFormOpen(false);
+  };
+
+  const handleEditClick = (invoice) => {
+    setEditInvoice(invoice);
+    setFormOpen(true);
+  };
+
+  // ─── Render ───────────────────────────────────────────────
+  if (initialLoading) return <Loading />;
 
   return (
-    <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
-      <Header title={"Hóa đơn"} description={`Tháng ${currentMonth}`} />
+    <>
+      <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
 
-      <div className="space-y-4">
-        {currentMonthBills.map((bill) => (
-          <Card
-            key={bill.id}
-            sx={{
-              borderRadius: '16px',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              overflow: 'hidden',
-            }}
-          >
-            <div className={`bg-gradient-to-r ${bill.paid ? 'from-green-400 to-emerald-500' : 'from-orange-400 to-red-500'} p-4 text-white`}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-lg font-medium">Phòng {bill.roomNumber}</h3>
-                  <p className="text-sm opacity-90">{bill.tenantName}</p>
-                </div>
-                <Chip
-                  label={bill.paid ? 'Đã đóng' : 'Chưa đóng'}
-                  size="small"
-                  sx={{
-                    bgcolor: 'rgba(255,255,255,0.3)',
-                    color: 'white',
-                    fontWeight: 500,
-                  }}
-                />
-              </div>
+        {/* ─── Filter Bar ─── */}
+        <div className="mb-4 flex flex-col gap-3">
+          {/* Tháng */}
+          <FormControl size="small" fullWidth>
+            <InputLabel>Tháng</InputLabel>
+            <Select
+              value={monthFilter}
+              label="Tháng"
+              onChange={e => setMonthFilter(e.target.value)}
+              sx={{ borderRadius: '12px' }}
+            >
+              <MenuItem value="">Tất cả tháng</MenuItem>
+              {MONTH_OPTIONS.map(o => (
+                <MenuItem key={o.val} value={o.val}>{o.label}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Phòng */}
+          {rooms.length > 0 && (
+            <FormControl size="small" fullWidth>
+              <InputLabel>Phòng</InputLabel>
+              <Select
+                value={roomFilter}
+                label="Phòng"
+                onChange={e => setRoomFilter(e.target.value)}
+                sx={{ borderRadius: '12px' }}
+              >
+                <MenuItem value="">Tất cả phòng</MenuItem>
+                {rooms.map(r => (
+                  <MenuItem key={r.id} value={r.id}>
+                    Phòng {r.roomCode}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <InvoiceStatusFilter
+          value={statusFilter}
+          onChange={handleStatusFilterChange}
+        />
+
+        {/* ─── Invoice List ─── */}
+        <div className="flex flex-col gap-4">
+          {listLoading ? (
+            <div className="flex justify-center py-12">
+              <CircularProgress size={36} sx={{ color: '#667eea' }} />
             </div>
+          ) : invoices.length === 0 ? (
+            <div className="text-center py-16 text-gray-500">
+              <Receipt size={52} className="mx-auto mb-3 text-gray-300" />
+              <p className="font-medium text-gray-600">Chưa có hóa đơn nào</p>
+              <p className="text-sm mt-1">Nhấn + để tạo hóa đơn mới</p>
+            </div>
+          ) : invoices.map((invoice, index) => {
+            const isPaid = invoice.status === InvoiceStatus.PAID;
+            const isOverdue = invoice.status === 'OVERDUE';
+            const headerGradient = isPaid
+              ? 'from-emerald-400 to-teal-500'
+              : isOverdue
+                ? 'from-red-500 to-rose-600'
+                : gradients[index % gradients.length];
 
-            <CardContent className="p-4">
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-600">Tổng tiền:</span>
-                  <span className="text-2xl font-bold text-indigo-600">{bill.total.toLocaleString('vi-VN')} ₫</span>
+            return (
+              <Card
+                key={invoice.id}
+                sx={{
+                  borderRadius: '16px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Card Header */}
+                <div className={`bg-gradient-to-r ${headerGradient} p-4 text-white`}>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold">Phòng {invoice.roomCode}</h3>
+                      <p className="text-sm text-white/85">{invoice.representativeTenantName || '---'}</p>
+                      <p className="text-xs text-white/70 mt-0.5">Tháng {invoice.month}</p>
+                    </div>
+                    <Chip
+                      label={
+                        isPaid ? 'Đã thanh toán'
+                          : isOverdue ? 'Quá hạn'
+                            : 'Chưa thanh toán'
+                      }
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontWeight: 600,
+                        fontSize: '0.7rem',
+                      }}
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2 mt-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Tiền phòng:</span>
-                    <span>{bill.roomPrice.toLocaleString('vi-VN')} ₫</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Zap size={14} className="text-yellow-500" />
-                      Điện ({bill.electricCurrent - bill.electricPrevious} kWh):
+                <CardContent className="p-4">
+                  {/* Tổng tiền */}
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm text-gray-500">Tổng tiền:</span>
+                    <span className="text-2xl font-bold text-indigo-600">
+                      {(invoice.totalAmount || 0).toLocaleString('vi-VN')} ₫
                     </span>
-                    <span>{((bill.electricCurrent - bill.electricPrevious) * bill.electricPrice).toLocaleString('vi-VN')} ₫</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Droplet size={14} className="text-blue-500" />
-                      Nước ({bill.waterCurrent - bill.waterPrevious} m³):
-                    </span>
-                    <span>{((bill.waterCurrent - bill.waterPrevious) * bill.waterPrice).toLocaleString('vi-VN')} ₫</span>
+
+                  {/* Chi tiết ngắn */}
+                  <div className="grid grid-cols-2 gap-2 mb-4">
+                    <div className="bg-yellow-50 rounded-xl p-2 text-center">
+                      <div className="flex items-center justify-center gap-1 text-yellow-600 mb-0.5">
+                        <Zap size={12} />
+                        <span className="text-xs font-medium">Điện</span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {invoice.electricUsage ?? 0} kWh
+                      </p>
+                      <p className="text-sm font-semibold text-yellow-700">
+                        {(invoice.electricFee || 0).toLocaleString('vi-VN')} ₫
+                      </p>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-2 text-center">
+                      <div className="flex items-center justify-center gap-1 text-blue-600 mb-0.5">
+                        <Droplet size={12} />
+                        <span className="text-xs font-medium">Nước</span>
+                      </div>
+                      <p className="text-xs text-gray-600">
+                        {invoice.waterUsage ?? 0} m³
+                      </p>
+                      <p className="text-sm font-semibold text-blue-700">
+                        {(invoice.waterFee || 0).toLocaleString('vi-VN')} ₫
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              <div className="flex gap-2">
-                <Button
-                  size="small"
-                  variant="outlined"
-                  startIcon={<Eye size={16} />}
-                  onClick={() => setInvoicePreview(bill)}
-                  fullWidth
-                  sx={{ borderRadius: '8px' }}
-                >
-                  Xem
-                </Button>
-                {!bill.paid && (
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="success"
-                    startIcon={<Check size={16} />}
-                    onClick={() => onMarkPaid(bill.id, new Date().toISOString())}
-                    fullWidth
-                    sx={{ borderRadius: '8px' }}
-                  >
-                    Đã đóng
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-
-        {currentMonthBills.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
-            <p>Chưa có hóa đơn nào tháng này</p>
-          </div>
-        )}
+                  {/* Actions */}
+                  <div className="flex gap-1.5">
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={<Eye size={14} />}
+                      onClick={() => setDetailInvoice(invoice)}
+                      fullWidth
+                      sx={{ borderRadius: '8px', fontSize: '0.75rem', p: 0.5 }}
+                    >
+                      Xem
+                    </Button>
+                    {!isPaid && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="secondary"
+                        startIcon={<Edit size={14} />}
+                        onClick={() => handleEditClick(invoice)}
+                        fullWidth
+                        sx={{ borderRadius: '8px', fontSize: '0.75rem', p: 0.5 }}
+                      >
+                        Sửa
+                      </Button>
+                    )}
+                    {!isPaid && (
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="success"
+                        startIcon={<Check size={14} />}
+                        onClick={() => handleMarkPaidClick(invoice)}
+                        fullWidth
+                        sx={{ borderRadius: '8px', fontSize: '0.75rem', p: 0.5 }}
+                      >
+                        Th.Toán
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
+      {/* FAB */}
       <Fab
         color="primary"
-        aria-label="add"
-        onClick={() => setCreateDialogOpen(true)}
+        aria-label="Tạo hóa đơn"
+        onClick={handleOpenFormDialog}
         sx={{
           position: 'fixed',
           bottom: 90,
@@ -205,133 +392,30 @@ export function InvoiceListPage({ bills, rooms, tenants, onCreateBill, onMarkPai
         <Plus />
       </Fab>
 
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} fullScreen>
-        <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen">
-          <h2 className="text-2xl mb-6">Tạo hóa đơn mới</h2>
+      {/* Form Dialog */}
+      <InvoiceFormDialog
+        open={formOpen}
+        onClose={handleCloseFormDialog}
+        onSuccess={handleFormSuccess}
+        editInvoice={editInvoice}
+      />
 
-          <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', mb: 3 }}>
-            <CardContent className="p-4">
-              <label className="text-sm text-gray-600 mb-2 block">Chọn phòng</label>
-              <select
-                className="w-full p-3 border rounded-xl bg-white"
-                value={selectedRoom}
-                onChange={(e) => handleSelectRoom(e.target.value)}
-              >
-                <option value="">-- Chọn phòng --</option>
-                {rooms.map((room) => {
-                  const tenant = tenants.find(t => t.roomId === room.id);
-                  return tenant ? (
-                    <option key={room.id} value={room.id}>
-                      Phòng {room.number} - {tenant.name}
-                    </option>
-                  ) : null;
-                })}
-              </select>
-            </CardContent>
-          </Card>
+      {/* Detail Dialog */}
+      <InvoiceDetailDialog
+        open={detailInvoice !== null}
+        onClose={() => setDetailInvoice(null)}
+        invoice={detailInvoice}
+        onMarkPaid={handleMarkPaidClick}
+      />
 
-          {selectedRoom && (
-            <>
-              <Card sx={{ borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)', mb: 3 }}>
-                <CardContent className="p-4">
-                  <div className="p-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white mb-4">
-                    <p className="text-sm opacity-90 mb-1">Tiền phòng</p>
-                    <p className="text-2xl font-bold">{selectedRoomData?.price.toLocaleString('vi-VN')} ₫</p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <button
-                      onClick={() => setMeterReadingOpen('electric')}
-                      className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-300 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center">
-                          <Zap className="text-white" size={20} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm text-gray-600">Chỉ số điện</p>
-                          <p className="font-medium">{billData.electricCurrent || 'Chưa ghi'}</p>
-                        </div>
-                      </div>
-                      <Button size="small" variant="outlined">Ghi số</Button>
-                    </button>
-
-                    <button
-                      onClick={() => setMeterReadingOpen('water')}
-                      className="w-full flex items-center justify-between p-4 border-2 border-gray-200 rounded-xl hover:border-indigo-300 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-lg flex items-center justify-center">
-                          <Droplet className="text-white" size={20} />
-                        </div>
-                        <div className="text-left">
-                          <p className="text-sm text-gray-600">Chỉ số nước</p>
-                          <p className="font-medium">{billData.waterCurrent || 'Chưa ghi'}</p>
-                        </div>
-                      </div>
-                      <Button size="small" variant="outlined">Ghi số</Button>
-                    </button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    setCreateDialogOpen(false);
-                    setSelectedRoom('');
-                  }}
-                  fullWidth
-                  sx={{ borderRadius: '12px', py: 1.5 }}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={handleCreateBill}
-                  disabled={!hasReadings}
-                  fullWidth
-                  sx={{ borderRadius: '12px', py: 1.5 }}
-                >
-                  Tạo hóa đơn
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
-      </Dialog>
-
-      <Dialog
-        open={meterReadingOpen !== null}
-        onClose={() => setMeterReadingOpen(null)}
-        fullScreen
-      >
-        <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 min-h-screen">
-          {meterReadingOpen && selectedRoomData && (
-            <MeterReadingForm
-              roomNumber={selectedRoomData.number}
-              meterType={meterReadingOpen}
-              previousReading={getPreviousReading(meterReadingOpen)}
-              onConfirm={(reading) => handleMeterReading(meterReadingOpen, reading)}
-              onCancel={() => setMeterReadingOpen(null)}
-            />
-          )}
-        </div>
-      </Dialog>
-
-      <Dialog
-        open={invoicePreview !== null}
-        onClose={() => setInvoicePreview(null)}
-        fullScreen
-      >
-        {invoicePreview && (
-          <InvoicePreview
-            bill={invoicePreview}
-            onClose={() => setInvoicePreview(null)}
-          />
-        )}
-      </Dialog>
-    </div>
+      {/* Payment Dialog */}
+      <InvoicePaymentDialog
+        open={paymentInvoice !== null}
+        onClose={() => setPaymentInvoice(null)}
+        invoice={paymentInvoice}
+        onConfirm={handleConfirmPayment}
+        loading={paymentLoading}
+      />
+    </>
   );
 }

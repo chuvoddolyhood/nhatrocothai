@@ -227,7 +227,6 @@ other_fees                 jsonb                      -- ad-hoc extra charges
 discount                   numeric DEFAULT 0
 total_amount               numeric NOT NULL
 room_code                  varchar                    -- denormalized snapshot
-representative_tenant_name varchar                    -- denormalized snapshot
 status                     varchar DEFAULT 'UNPAID'   -- 'UNPAID' | 'PAID' | 'OVERDUE'
 due_date                   date
 paid_at                    timestamptz
@@ -506,3 +505,10 @@ Step 5: Save to Supabase
 - **Firebase config** (Auth/Hosting) is in `src/firebase/`.
 - **Module structure** follows feature-based organization under `src/modules/<feature>/`.
 - **RLS policies** are currently open (`USING (true)`). When adding Auth, update policies to enforce per-user/per-role access.
+
+---
+
+## 8. Báo cáo tiến độ chi tiết (AI Reports)
+
+- [Báo cáo cập nhật chức năng CRUD Hợp đồng](./ai-report/contract-report.md)
+- [Báo cáo chức năng Quản lý Hóa đơn](./ai-report/invoice_module.md)
