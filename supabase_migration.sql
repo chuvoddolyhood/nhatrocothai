@@ -4,226 +4,272 @@
 -- ============================================================
 
 -- 1. Bảng users (Người dùng)
-CREATE TABLE users (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE,
-    phone VARCHAR(20),
-    role VARCHAR(20) NOT NULL,
-    status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.users (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  full_name character varying NOT NULL,
+  email character varying UNIQUE,
+  phone character varying,
+  role character varying NOT NULL,
+  status character varying DEFAULT 'ACTIVE'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );
 
 -- 2. Bảng properties (Khu trọ)
-CREATE TABLE properties (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    owner_id BIGINT NOT NULL REFERENCES users(id),
-    name VARCHAR(255) NOT NULL,
-    address TEXT,
-    room_count INTEGER DEFAULT 0,
-    occupied_room_count INTEGER DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.properties (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  owner_id bigint NOT NULL,
+  name character varying NOT NULL,
+  address text,
+  room_count integer DEFAULT 0,
+  occupied_room_count integer DEFAULT 0,
+  status character varying DEFAULT 'ACTIVE'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT properties_pkey PRIMARY KEY (id),
+  CONSTRAINT properties_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES public.users(id)
 );
 
 -- 3. Bảng property_users (Liên kết người dùng - khu trọ)
-CREATE TABLE property_users (
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    user_id BIGINT NOT NULL REFERENCES users(id),
-    PRIMARY KEY(property_id, user_id)
+CREATE TABLE public.property_users (
+  property_id bigint NOT NULL,
+  user_id bigint NOT NULL,
+  CONSTRAINT property_users_pkey PRIMARY KEY (property_id, user_id),
+  CONSTRAINT property_users_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
+  CONSTRAINT property_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 
 -- 4. Bảng rooms (Phòng)
-CREATE TABLE rooms (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    room_code VARCHAR(50) NOT NULL,
-    floor VARCHAR(50),
-    area NUMERIC(10,2),
-    status VARCHAR(20) NOT NULL,
-    current_contract_id BIGINT,
-    current_price NUMERIC(15,2),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT NULL REFERENCES users(id),
-    updated_by BIGINT NULL REFERENCES users(id)
+CREATE TABLE public.rooms (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  property_id bigint NOT NULL,
+  room_code character varying NOT NULL,
+  floor character varying,
+  area numeric,
+  status character varying NOT NULL,
+  current_contract_id bigint,
+  current_price numeric NOT NULL,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_by bigint,
+  CONSTRAINT rooms_pkey PRIMARY KEY (id),
+  CONSTRAINT rooms_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
+  CONSTRAINT rooms_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT rooms_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 5. Bảng tenants (Khách thuê)
-CREATE TABLE tenants (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    full_name VARCHAR(255) NOT NULL,
-    phone VARCHAR(20),
-    citizen_id VARCHAR(20),
-    birth_date DATE,
-    permanent_address TEXT,
-    citizen_id_front_url TEXT,
-    citizen_id_back_url TEXT,
-    status VARCHAR(20) DEFAULT 'ACTIVE',
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    created_by BIGINT NULL REFERENCES users(id),
-    updated_by BIGINT NULL REFERENCES users(id)
+CREATE TABLE public.tenants (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  full_name character varying NOT NULL,
+  phone character varying NOT NULL,
+  citizen_id character varying NOT NULL,
+  birth_date date NOT NULL,
+  permanent_address text NOT NULL,
+  citizen_id_front_url text,
+  citizen_id_back_url text,
+  status character varying DEFAULT 'ACTIVE'::character varying,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  updated_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_by bigint,
+  CONSTRAINT tenants_pkey PRIMARY KEY (id),
+  CONSTRAINT tenants_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT tenants_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 6. Bảng contracts (Hợp đồng)
-CREATE TABLE contracts (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    room_id BIGINT NOT NULL REFERENCES rooms(id),
-    representative_tenant_id BIGINT REFERENCES tenants(id),
-    deposit_amount NUMERIC(15,2),
-    monthly_rent NUMERIC(15,2),
-    billing_day INTEGER NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    status VARCHAR(20) NOT NULL,
-    created_by BIGINT REFERENCES users(id),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.contracts (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  property_id bigint NOT NULL,
+  room_id bigint NOT NULL,
+  representative_tenant_id bigint NOT NULL,
+  deposit_amount numeric NOT NULL,
+  monthly_rent numeric NOT NULL,
+  billing_day integer NOT NULL,
+  start_date date NOT NULL,
+  end_date date,
+  status character varying,
+  created_by bigint,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by bigint,
+  CONSTRAINT contracts_pkey PRIMARY KEY (id),
+  CONSTRAINT contracts_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
+  CONSTRAINT contracts_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
+  CONSTRAINT contracts_representative_tenant_id_fkey FOREIGN KEY (representative_tenant_id) REFERENCES public.tenants(id),
+  CONSTRAINT contracts_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT contracts_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 7. Bảng contract_tenants (Liên kết hợp đồng - khách thuê)
-CREATE TABLE contract_tenants (
-    contract_id BIGINT NOT NULL REFERENCES contracts(id),
-    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
-    PRIMARY KEY(contract_id, tenant_id)
+CREATE TABLE public.contract_tenants (
+  contract_id bigint NOT NULL,
+  tenant_id bigint NOT NULL,
+  CONSTRAINT contract_tenants_pkey PRIMARY KEY (contract_id, tenant_id),
+  CONSTRAINT contract_tenants_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
+  CONSTRAINT contract_tenants_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
-
--- 8. Bảng room_prices (Lịch sử giá phòng)
-CREATE TABLE room_prices (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    room_id BIGINT NOT NULL REFERENCES rooms(id),
-    price NUMERIC(15,2) NOT NULL,
-    effective_from DATE NOT NULL,
-    effective_to DATE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.room_prices (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  room_id bigint NOT NULL,
+  price numeric NOT NULL,
+  effective_from date NOT NULL,
+  effective_to date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  created_by bigint,
+  updated_at timestamp with time zone DEFAULT now(),
+  updated_by bigint,
+  CONSTRAINT room_prices_pkey PRIMARY KEY (id),
+  CONSTRAINT room_prices_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
+  CONSTRAINT room_prices_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
+  CONSTRAINT room_prices_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
 );
 
 -- 9. Bảng utility_prices (Giá dịch vụ tiện ích)
-CREATE TABLE utility_prices (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    electric_price NUMERIC(15,2) NOT NULL,
-    water_price NUMERIC(15,2) NOT NULL,
-    internet_price NUMERIC(15,2) DEFAULT 0,
-    service_price NUMERIC(15,2) DEFAULT 0,
-    effective_from DATE NOT NULL,
-    effective_to DATE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.utility_prices (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  property_id bigint NOT NULL,
+  electric_price numeric NOT NULL,
+  water_price numeric NOT NULL,
+  internet_price numeric DEFAULT 0,
+  service_price numeric DEFAULT 0,
+  effective_from date NOT NULL,
+  effective_to date,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT utility_prices_pkey PRIMARY KEY (id),
+  CONSTRAINT utility_prices_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id)
 );
 
 -- 10. Bảng meter_readings (Chỉ số điện nước)
-CREATE TABLE meter_readings (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    room_id BIGINT NOT NULL REFERENCES rooms(id),
-    contract_id BIGINT NOT NULL REFERENCES contracts(id),
-    month VARCHAR(7) NOT NULL,
-    electric_old INTEGER NOT NULL,
-    electric_new INTEGER NOT NULL,
-    electric_used INTEGER NOT NULL,
-    water_old INTEGER NOT NULL,
-    water_new INTEGER NOT NULL,
-    water_used INTEGER NOT NULL,
-    electric_image_url TEXT,
-    water_image_url TEXT,
-    electric_ocr_text VARCHAR(50),
-    water_ocr_text VARCHAR(50),
-    electric_ocr_confidence NUMERIC(5,2),
-    water_ocr_confidence NUMERIC(5,2),
-    verified BOOLEAN DEFAULT FALSE,
-    verified_by BIGINT REFERENCES users(id),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(room_id, month)
+CREATE TABLE public.meter_readings (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  room_id bigint NOT NULL,
+  contract_id bigint NOT NULL,
+  month character varying NOT NULL,
+  electric_old integer NOT NULL,
+  electric_new integer NOT NULL,
+  electric_used integer NOT NULL,
+  water_old integer NOT NULL,
+  water_new integer NOT NULL,
+  water_used integer NOT NULL,
+  electric_image_url text,
+  water_image_url text,
+  electric_ocr_text character varying,
+  water_ocr_text character varying,
+  electric_ocr_confidence numeric,
+  water_ocr_confidence numeric,
+  verified boolean DEFAULT false,
+  verified_by bigint,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT meter_readings_pkey PRIMARY KEY (id),
+  CONSTRAINT meter_readings_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
+  CONSTRAINT meter_readings_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id),
+  CONSTRAINT meter_readings_verified_by_fkey FOREIGN KEY (verified_by) REFERENCES public.users(id)
 );
 
 -- 11. Bảng invoices (Hóa đơn)
-CREATE TABLE invoices (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    room_id BIGINT NOT NULL REFERENCES rooms(id),
-    contract_id BIGINT NOT NULL REFERENCES contracts(id),
-    month VARCHAR(7) NOT NULL,
-    room_fee NUMERIC(15,2) NOT NULL,
-    electric_price NUMERIC(15,2) NOT NULL,
-    electric_usage INTEGER NOT NULL,
-    electric_fee NUMERIC(15,2) NOT NULL,
-    water_price NUMERIC(15,2) NOT NULL,
-    water_usage INTEGER NOT NULL,
-    water_fee NUMERIC(15,2) NOT NULL,
-    internet_fee NUMERIC(15,2) DEFAULT 0,
-    service_fee NUMERIC(15,2) DEFAULT 0,
-    other_fees JSONB,
-    discount NUMERIC(15,2) DEFAULT 0,
-    total_amount NUMERIC(15,2) NOT NULL,
-    room_code VARCHAR(50),
-    representative_tenant_name VARCHAR(255),
-    status VARCHAR(20) DEFAULT 'UNPAID',
-    due_date DATE,
-    paid_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.invoices (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  property_id bigint NOT NULL,
+  room_id bigint NOT NULL,
+  contract_id bigint NOT NULL,
+  month character varying NOT NULL,
+  room_fee numeric NOT NULL,
+  electric_price numeric NOT NULL,
+  electric_usage integer NOT NULL,
+  electric_fee numeric NOT NULL,
+  water_price numeric NOT NULL,
+  water_usage integer NOT NULL,
+  water_fee numeric NOT NULL,
+  internet_fee numeric DEFAULT 0,
+  service_fee numeric DEFAULT 0,
+  other_fees jsonb,
+  discount numeric DEFAULT 0,
+  total_amount numeric NOT NULL,
+  room_code character varying,
+  representative_tenant_name character varying,
+  status character varying DEFAULT 'UNPAID'::character varying,
+  due_date date,
+  paid_at timestamp with time zone,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT invoices_pkey PRIMARY KEY (id),
+  CONSTRAINT invoices_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
+  CONSTRAINT invoices_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
+  CONSTRAINT invoices_contract_id_fkey FOREIGN KEY (contract_id) REFERENCES public.contracts(id)
 );
 
 -- 12. Bảng invoice_tenants (Liên kết hóa đơn - khách thuê)
-CREATE TABLE invoice_tenants (
-    invoice_id BIGINT NOT NULL REFERENCES invoices(id),
-    tenant_id BIGINT NOT NULL REFERENCES tenants(id),
-    PRIMARY KEY(invoice_id, tenant_id)
+CREATE TABLE public.invoice_tenants (
+  invoice_id bigint NOT NULL,
+  tenant_id bigint NOT NULL,
+  CONSTRAINT invoice_tenants_pkey PRIMARY KEY (invoice_id, tenant_id),
+  CONSTRAINT invoice_tenants_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id),
+  CONSTRAINT invoice_tenants_tenant_id_fkey FOREIGN KEY (tenant_id) REFERENCES public.tenants(id)
 );
 
 -- 13. Bảng payments (Thanh toán)
-CREATE TABLE payments (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    invoice_id BIGINT NOT NULL REFERENCES invoices(id),
-    room_id BIGINT NOT NULL REFERENCES rooms(id),
-    amount NUMERIC(15,2) NOT NULL,
-    payment_method VARCHAR(30),
-    transaction_code VARCHAR(100),
-    paid_by BIGINT REFERENCES users(id),
-    paid_at TIMESTAMPTZ NOT NULL,
-    note TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.payments (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  invoice_id bigint NOT NULL,
+  room_id bigint NOT NULL,
+  amount numeric NOT NULL,
+  payment_method character varying,
+  transaction_code character varying,
+  paid_by bigint,
+  paid_at timestamp with time zone NOT NULL,
+  note text,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_invoice_id_fkey FOREIGN KEY (invoice_id) REFERENCES public.invoices(id),
+  CONSTRAINT payments_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.rooms(id),
+  CONSTRAINT payments_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id)
 );
 
 -- 14. Bảng monthly_reports (Báo cáo tháng)
-CREATE TABLE monthly_reports (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    property_id BIGINT NOT NULL REFERENCES properties(id),
-    month VARCHAR(7) NOT NULL,
-    total_revenue NUMERIC(15,2),
-    unpaid_amount NUMERIC(15,2),
-    occupied_rooms INTEGER,
-    total_rooms INTEGER,
-    occupancy_rate NUMERIC(5,2),
-    electric_consumption INTEGER,
-    water_consumption INTEGER,
-    generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE(property_id, month)
+CREATE TABLE public.monthly_reports (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  property_id bigint NOT NULL,
+  month character varying NOT NULL,
+  total_revenue numeric,
+  unpaid_amount numeric,
+  occupied_rooms integer,
+  total_rooms integer,
+  occupancy_rate numeric,
+  electric_consumption integer,
+  water_consumption integer,
+  generated_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT monthly_reports_pkey PRIMARY KEY (id),
+  CONSTRAINT monthly_reports_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id)
 );
 
 -- 15. Bảng notifications (Thông báo)
-CREATE TABLE notifications (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    type VARCHAR(50),
-    target_user_id BIGINT NOT NULL REFERENCES users(id),
-    title VARCHAR(255),
-    message TEXT,
-    is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.notifications (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  type character varying,
+  target_user_id bigint NOT NULL,
+  title character varying,
+  message text,
+  is_read boolean DEFAULT false,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT notifications_pkey PRIMARY KEY (id),
+  CONSTRAINT notifications_target_user_id_fkey FOREIGN KEY (target_user_id) REFERENCES public.users(id)
 );
 
 -- 16. Bảng audit_logs (Nhật ký hoạt động)
-CREATE TABLE audit_logs (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    entity_type VARCHAR(50) NOT NULL,
-    entity_id BIGINT NOT NULL,
-    action VARCHAR(20) NOT NULL,
-    old_value JSONB,
-    new_value JSONB,
-    performed_by BIGINT REFERENCES users(id),
-    performed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+CREATE TABLE public.audit_logs (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  entity_type character varying NOT NULL,
+  entity_id bigint NOT NULL,
+  action character varying NOT NULL,
+  old_value jsonb,
+  new_value jsonb,
+  performed_by bigint,
+  performed_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT audit_logs_pkey PRIMARY KEY (id),
+  CONSTRAINT audit_logs_performed_by_fkey FOREIGN KEY (performed_by) REFERENCES public.users(id)
 );
 
 -- ============================================================
