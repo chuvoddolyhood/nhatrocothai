@@ -47,8 +47,8 @@ export default function App() {
 
   const renderContent = () => {
     switch (currentView) {
-      // case 'dashboard':
-      //   return <DashboardPage />;
+      case 'dashboard':
+        return <DashboardPage setHeaderConfig={setHeaderConfig} />;
 
       case 'rooms':
         return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
