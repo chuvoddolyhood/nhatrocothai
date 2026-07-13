@@ -5,9 +5,9 @@ import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
 import { RoomListPage } from './modules/room/pages/RoomListPage';
 import { TenantListPage } from './modules/tenant/pages/TenantListPage';
 import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
-import { ReportingDashboard } from './modules/dashboard/components/ReportingDashboard';
 import { RoomService } from './modules/room/services/RoomService';
 import { ContractListPage } from './modules/contract/pages/ContractListPage';
+import { ReportingPage } from './modules/dashboard/pages/ReportingPage';
 import Header from './shared/components/ui/Header';
 
 const theme = createTheme({
@@ -62,8 +62,8 @@ export default function App() {
       case 'billing':
         return <InvoiceListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
-      // case 'reports':
-      //   return <ReportingDashboard />;
+      case 'reports':
+        return <ReportingPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
       default:
         return null;
