@@ -58,7 +58,6 @@ export function ContractStatusFilter({ value, onChange, headerTop = 90, collapse
             className="flex justify-center fixed left-0 right-0 z-30 py-2 px-4 transition-all duration-300 ease-in-out"
             style={{
                 top: headerVisible ? `${headerTop}px` : `${collapsedTop}px`,
-                WebkitBackdropFilter: 'blur(14px)',
             }}
         >
             {/* Pill container */}
@@ -80,8 +79,8 @@ export function ContractStatusFilter({ value, onChange, headerTop = 90, collapse
                         position: 'absolute',
                         top: '3px',
                         bottom: '3px',
-                        width: `calc(${pct}% - 3px)`,
-                        left: `calc(${selectedIndex * pct}% + 3px)`,
+                        width: `calc((100% - 6px) / ${STATUS_FILTERS.length})`,
+                        left: `calc(3px + ${selectedIndex} * (100% - 6px) / ${STATUS_FILTERS.length})`,
                         backgroundColor: activeFilter.bg,
                         borderRadius: '9px',
                         boxShadow: `0 2px 10px ${activeFilter.shadow}`,

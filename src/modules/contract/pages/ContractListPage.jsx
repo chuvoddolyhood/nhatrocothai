@@ -82,6 +82,7 @@ export function ContractListPage({ view, setHeaderConfig }) {
   const handleStatusFilterChange = (_, newStatus) => {
     if (newStatus !== null) {
       setStatusFilter(newStatus);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
