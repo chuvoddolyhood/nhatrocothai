@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Button, Card, CardContent, Fab } from '@mui/material';
-import { Plus, Edit, Trash2, FileSignature, Calendar, DollarSign, Users, Shredder } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Button, Card, CardContent, Fab, CircularProgress } from '@mui/material';
+import { Plus, Edit, FileSignature, Calendar, DollarSign, Users, Shredder, Eye } from 'lucide-react';
 import Loading from '../../../shared/components/ui/Loading';
 import { ContractService } from '../services/ContractService';
 import { RoomService } from '../../room/services/RoomService';
@@ -9,31 +9,56 @@ import { useNotification } from '../../../shared/hooks/useNotification';
 import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import { ContractFormDialog } from '../components/ContractFormDialog';
+import { ContractDetailDialog } from '../components/ContractDetailDialog';
+import { ContractStatusFilter } from '../components/ContractStatusFilter';
 import { ContractStatus, ContractStatusLabel } from '../constants/ContractStatus';
 
+
 export function ContractListPage({ view, setHeaderConfig }) {
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
   const [contracts, setContracts] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [tenants, setTenants] = useState([]);
+  const [statusFilter, setStatusFilter] = useState(ContractStatus.ACTIVE);
+  const isFirstLoad = useRef(true);
 
   const [open, setOpen] = useState(false);
   const [editingContract, setEditingContract] = useState(null);
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewingContract, setViewingContract] = useState(null);
+  const [viewingIndex, setViewingIndex] = useState(0);
+
   const { showSuccess, showError } = useNotification();
 
-  const fetchContracts = async () => {
+  const fetchContracts = async (status = statusFilter) => {
     try {
-      const [contractRes, roomRes, tenantRes] = await Promise.all([
-        ContractService.getContracts({ status: ContractStatus.ACTIVE }),
-        RoomService.getRooms(),
-        TenantService.getTenants(),
-      ]);
+      if (isFirstLoad.current) {
+        setInitialLoading(true);
+      } else {
+        setListLoading(true);
+      }
+
+      const fetchData = isFirstLoad.current
+        ? Promise.all([
+          ContractService.getContracts({ status }),
+          RoomService.getRooms(),
+          TenantService.getTenants(),
+        ])
+        : Promise.all([
+          ContractService.getContracts({ status }),
+          Promise.resolve({ success: true, data: rooms }),
+          Promise.resolve({ success: true, data: tenants }),
+        ]);
+
+      const [contractRes, roomRes, tenantRes] = await fetchData;
 
       if (contractRes.success) {
         setContracts(contractRes.data);
         setHeaderConfig({
           title: getMenuLabel(view),
-          description: `${contractRes.data.length} hợp đồng tổng cộng`
+          description: `${contractRes.data.length} hợp đồng`
         });
       }
       if (roomRes.success) setRooms(roomRes.data);
@@ -41,24 +66,49 @@ export function ContractListPage({ view, setHeaderConfig }) {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+        setInitialLoading(false);
+      } else {
+        setListLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchContracts();
-  }, []);
+    fetchContracts(statusFilter);
+  }, [statusFilter]);
 
-  const handleOpen = (contract) => {
+  const handleStatusFilterChange = (_, newStatus) => {
+    if (newStatus !== null) {
+      setStatusFilter(newStatus);
+    }
+  };
+
+  // --- Form dialog (Create / Edit) ---
+  const handleOpenForm = (contract) => {
     setEditingContract(contract || null);
     setOpen(true);
   };
 
-  const handleClose = () => {
+  const handleCloseForm = () => {
     setOpen(false);
     setEditingContract(null);
   };
 
+  // --- Detail dialog ---
+  const handleOpenDetail = (contract, index) => {
+    setViewingContract(contract);
+    setViewingIndex(index);
+    setDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailOpen(false);
+    setViewingContract(null);
+  };
+
+  // --- Terminate ---
   const onDeleteContract = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn kết thúc (chấm dứt) hợp đồng này?")) {
       try {
@@ -85,11 +135,22 @@ export function ContractListPage({ view, setHeaderConfig }) {
 
   return (
     <>
-      {loading ? <Loading /> :
-        <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
+      {initialLoading ? <Loading /> :
+        <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen" style={{ paddingTop: '56px' }}>
 
+          {/* Status Filter */}
+          <ContractStatusFilter
+            value={statusFilter}
+            onChange={handleStatusFilterChange}
+          />
+
+          {/* Contract list */}
           <div className="grid grid-cols-1 gap-4">
-            {contracts.length === 0 ? (
+            {listLoading ? (
+              <div className="flex justify-center py-12">
+                <CircularProgress size={36} sx={{ color: '#667eea' }} />
+              </div>
+            ) : contracts.length === 0 ? (
               <div className="text-center py-10 text-gray-500">Chưa có hợp đồng nào.</div>
             ) : contracts.map((contract, index) => {
               const room = rooms.find(r => r.id === contract.roomId);
@@ -155,8 +216,8 @@ export function ContractListPage({ view, setHeaderConfig }) {
                       <Button
                         size="small"
                         variant="outlined"
-                        startIcon={<Edit size={16} />}
-                        onClick={() => handleOpen(contract)}
+                        startIcon={<Eye size={16} />}
+                        onClick={() => handleOpenDetail(contract, index)}
                         fullWidth
                         sx={{ borderRadius: '8px' }}
                       >
@@ -166,7 +227,7 @@ export function ContractListPage({ view, setHeaderConfig }) {
                         size="small"
                         variant="outlined"
                         startIcon={<Edit size={16} />}
-                        onClick={() => handleOpen(contract)}
+                        onClick={() => handleOpenForm(contract)}
                         fullWidth
                         sx={{ borderRadius: '8px' }}
                       >
@@ -191,28 +252,43 @@ export function ContractListPage({ view, setHeaderConfig }) {
             })}
           </div>
 
-          <Fab
-            color="primary"
-            aria-label="add"
-            onClick={() => handleOpen()}
-            sx={{
-              position: 'fixed',
-              bottom: 90,
-              right: 20,
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #5568d3 0%, #65408a 100%)',
-              },
-            }}
-          >
-            <Plus />
-          </Fab>
+          {/* FAB — chỉ hiện ở tab ACTIVE */}
+          {statusFilter === ContractStatus.ACTIVE && (
+            <Fab
+              color="primary"
+              aria-label="add"
+              onClick={() => handleOpenForm()}
+              sx={{
+                position: 'fixed',
+                bottom: 90,
+                right: 20,
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #5568d3 0%, #65408a 100%)',
+                },
+              }}
+            >
+              <Plus />
+            </Fab>
+          )}
 
+          {/* Form Dialog (Create / Edit) */}
           <ContractFormDialog
             open={open}
-            onClose={handleClose}
+            onClose={handleCloseForm}
             onSuccess={fetchContracts}
             editingContract={editingContract}
+          />
+
+          {/* Detail Dialog */}
+          <ContractDetailDialog
+            open={detailOpen}
+            onClose={handleCloseDetail}
+            contract={viewingContract}
+            rooms={rooms}
+            tenants={tenants}
+            gradientIndex={viewingIndex}
+            onEdit={handleOpenForm}
           />
         </div>
       }
