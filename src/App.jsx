@@ -59,8 +59,8 @@ export default function App() {
       case 'contracts':
         return <ContractListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
-      // case 'billing':
-      //   return <InvoiceListPage />;
+      case 'billing':
+        return <InvoiceListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
       // case 'reports':
       //   return <ReportingDashboard />;
@@ -73,7 +73,7 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 pt-24">
+      <div className="min-h-screen bg-linear-to-r from-indigo-50 via-white to-purple-50 pt-24">
         <Header
           data={headerConfig || {}}
           onViewChange={handleViewChange}
