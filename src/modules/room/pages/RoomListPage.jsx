@@ -3,6 +3,7 @@ import { Button, Card, CardContent, Chip, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, Home, Eye } from 'lucide-react';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import RoomFormDialog from '../components/RoomFormDialog';
+import { RoomDetailDialog } from '../components/RoomDetailDialog';
 import { RoomService } from '../services/RoomService';
 import Loading from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
@@ -14,6 +15,8 @@ export function RoomListPage({ view, setHeaderConfig }) {
   const [open, setOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [viewingRoom, setViewingRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const { showSuccess, showError } = useNotification();
@@ -82,6 +85,16 @@ export function RoomListPage({ view, setHeaderConfig }) {
   const handleClose = () => {
     setOpen(false);
     setEditingRoom(null);
+  };
+
+  const handleOpenDetail = (room) => {
+    setViewingRoom(room);
+    setDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailOpen(false);
+    setViewingRoom(null);
   };
 
   const formatCurrency = (value) => `${value.toLocaleString('vi-VN')} ₫`;
@@ -160,9 +173,8 @@ export function RoomListPage({ view, setHeaderConfig }) {
                     <Button
                       size="small"
                       variant="outlined"
-                      color="secondary"
                       startIcon={<Eye size={16} />}
-                      onClick={() => handleOpen(room)}
+                      onClick={() => handleOpenDetail(room)}
                       fullWidth
                       sx={{ borderRadius: '8px' }}
                     >
@@ -222,6 +234,13 @@ export function RoomListPage({ view, setHeaderConfig }) {
             setFormData={setFormData}
             onClose={handleClose}
             onSuccess={fetchRooms}
+          />
+          
+          <RoomDetailDialog
+            open={detailOpen}
+            onClose={handleCloseDetail}
+            room={viewingRoom}
+            onEdit={handleOpen}
           />
         </div>
       }
