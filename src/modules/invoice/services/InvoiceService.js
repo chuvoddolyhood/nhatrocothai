@@ -36,20 +36,25 @@ export const InvoiceService = {
             if (filters.roomId) {
                 query = query.eq("room_id", filters.roomId);
             }
+            if (filters.contractId) {
+                query = query.eq("contract_id", filters.contractId);
+            }
 
             const { data, error } = await query;
             if (error) throw error;
 
-            return { 
-                success: true, 
+            return {
+                success: true,
                 data: data.map(row => {
                     const mapped = toCamelCase(row);
                     // Extract tenant name from joined table
                     const tenant = row.invoice_tenants?.[0]?.tenants;
                     mapped.representativeTenantName = tenant?.full_name || '';
                     delete mapped.invoiceTenants;
+                    console.log(mapped);
+
                     return mapped;
-                }) 
+                })
             };
         } catch (error) {
             console.error("Lỗi khi lấy danh sách hóa đơn:", error);
@@ -74,7 +79,7 @@ export const InvoiceService = {
                 .single();
 
             if (error) throw error;
-            
+
             const mapped = toCamelCase(data);
             const tenant = data.invoice_tenants?.[0]?.tenants;
             mapped.representativeTenantName = tenant?.full_name || '';

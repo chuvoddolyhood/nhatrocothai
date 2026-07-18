@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button, Card, CardContent, Fab, CircularProgress } from '@mui/material';
 import { Plus, Edit, FileSignature, Calendar, DollarSign, Users, Shredder, Eye } from 'lucide-react';
-import Loading from '../../../shared/components/ui/Loading';
+import Loading, { SkeletonList } from '../../../shared/components/ui/Loading';
 import { ContractService } from '../services/ContractService';
 import { RoomService } from '../../room/services/RoomService';
 import { TenantService } from '../../tenant/services/TenantService';
@@ -44,7 +44,7 @@ export function ContractListPage({ view, setHeaderConfig }) {
         ? Promise.all([
           ContractService.getContracts({ status }),
           RoomService.getRooms(),
-          TenantService.getTenants(),
+          TenantService.getTenants({ excludeMovedOut: false }),
         ])
         : Promise.all([
           ContractService.getContracts({ status }),
@@ -148,9 +148,7 @@ export function ContractListPage({ view, setHeaderConfig }) {
           {/* Contract list */}
           <div className="grid grid-cols-1 gap-4">
             {listLoading ? (
-              <div className="flex justify-center py-12">
-                <CircularProgress size={36} sx={{ color: '#667eea' }} />
-              </div>
+              <SkeletonList count={3} />
             ) : contracts.length === 0 ? (
               <div className="text-center py-10 text-gray-500">Chưa có hợp đồng nào.</div>
             ) : contracts.map((contract, index) => {
