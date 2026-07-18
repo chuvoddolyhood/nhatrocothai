@@ -7,13 +7,19 @@ const TABLE_NAME = "tenants";
 
 export const TenantService = {
     // Lấy danh sách khách thuê
-    async getTenants() {
+    async getTenants(filters = {}) {
         try {
-            const { data, error } = await supabase
-                .from(TABLE_NAME)
-                .select("*")
-                .neq("status", TenantStatus.MOVED_OUT)
-                .order("created_at", { ascending: true });
+            let query = supabase.from(TABLE_NAME).select("*");
+
+            if (filters.status) {
+                query = query.eq("status", filters.status);
+            } else if (filters.excludeMovedOut !== false) {
+                query = query.neq("status", TenantStatus.MOVED_OUT);
+            }
+
+            query = query.order("created_at", { ascending: true });
+
+            const { data, error } = await query;
 
             if (error) throw error;
 
