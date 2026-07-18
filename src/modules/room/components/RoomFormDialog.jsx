@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, FormControl, InputLabel, Card, CardContent, Chip, Fab } from '@mui/material';
 import { RoomService } from '../services/RoomService';
 import { PropertiesService } from '../../properties/service/PropertiesService';
+import { useNotification } from '../../../shared/hooks/useNotification';
 
 
 const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onSuccess }) => {
-
+    const { showSuccess, showError } = useNotification();
     const [properties, setProperties] = useState([]);
 
     const handleChange = (field) => (e) => {
@@ -43,26 +44,26 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
             const result = await RoomService.updateRoom(editingRoom.id, formData);
 
             if (result.success) {
+                showSuccess("Cập nhật phòng thành công");
                 if (onSuccess) {
                     onSuccess();
                     onClose();
                 }
-
             } else {
-                alert("Cập nhật phòng thất bại!");
+                showError(result.error || "Cập nhật phòng thất bại!");
             }
 
         } else {
-
             const result = await RoomService.addRoom(formData);
+            
             if (result.success) {
+                showSuccess("Thêm phòng thành công");
                 if (onSuccess) {
                     onSuccess();
                     onClose();
                 }
-
             } else {
-                alert("Thêm phòng thất bại!");
+                showError(result.error || "Thêm phòng thất bại!");
             }
         }
     };
