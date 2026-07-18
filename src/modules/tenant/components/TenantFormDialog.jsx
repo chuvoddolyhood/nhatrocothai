@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Box } from '@mui/material';
 import { INITIAL_TENANT_FORM_DATA } from '../dto/TenantDTO';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -7,19 +7,33 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { TenantService } from '../services/TenantService';
 import { useNotification } from '../../../shared/hooks/useNotification';
-import { Camera, Trash2, AlertCircle } from 'lucide-react';
+import { Camera, AlertCircle, Zap } from 'lucide-react';
+import { CccdImage } from './CccdImage';
+import { useOcr } from '../hooks/useOcr';
+import OcrResultsDialog from './OcrResultsDialog';
+import CameraDialog from './CameraDialog';
 
 export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
     const [formData, setFormData] = useState(INITIAL_TENANT_FORM_DATA);
+    const [originalData, setOriginalData] = useState(INITIAL_TENANT_FORM_DATA);
     const { showSuccess, showError } = useNotification();
+    const ocr = useOcr();
 
-    // Camera capture states
+    // OCR states
+    const [ocrResultDialogOpen, setOcrResultDialogOpen] = useState(false);
+    const [ocrResult, setOcrResult] = useState(null);
+    const [capturedSide, setCapturedSide] = useState(null); // 'front' or 'back'
+    const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+    const [useOcrFlow, setUseOcrFlow] = useState(false); // Toggle between OCR and simple camera
+
+    // Legacy camera states (kept for compatibility)
     const [cameraOpen, setCameraOpen] = useState(false);
     const [cameraSide, setCameraSide] = useState(null); // 'front' | 'back'
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
+    // Camera handling functions
     useEffect(() => {
         let activeStream = null;
         async function startCamera() {
@@ -50,6 +64,78 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
             }
         };
     }, [cameraOpen, cameraSide]);
+
+    /**
+     * Handle capture from OCR camera dialog
+     */
+    const handleOcrCaptureComplete = async (captures) => {
+        try {
+            setIsOcrProcessing(true);
+            setOcrResult(null);
+
+            // Perform OCR on front side
+            if (captures.front) {
+                const result = await ocr.performOcr('front');
+                if (result) {
+                    setOcrResult(result);
+                    setCapturedSide('front');
+                    setOcrResultDialogOpen(true);
+                }
+            }
+
+            // Store captures for later
+            setFormData(prev => ({
+                ...prev,
+                citizenIdFrontUrl: captures.front?.image || prev.citizenIdFrontUrl,
+                citizenIdBackUrl: captures.back?.image || prev.citizenIdBackUrl,
+            }));
+        } catch (error) {
+            console.error('OCR error:', error);
+            showError('Lỗi xử lý OCR: ' + error.message);
+        } finally {
+            setIsOcrProcessing(false);
+        }
+    };
+
+    /**
+     * Handle OCR results confirmation
+     */
+    const handleOcrResultsConfirm = async (correctedData) => {
+        try {
+            // Log the OCR data for training
+            await ocr.logOcrData(ocrResult, correctedData, true);
+
+            // Auto-fill form with corrected data
+            if (correctedData.front) {
+                setFormData(prev => ({
+                    ...prev,
+                    fullName: correctedData.front.fullName || prev.fullName,
+                    citizenId: correctedData.front.citizenId || prev.citizenId,
+                    birthDate: correctedData.front.birthDate || prev.birthDate,
+                }));
+            }
+
+            if (correctedData.back) {
+                setFormData(prev => ({
+                    ...prev,
+                    permanentAddress: correctedData.back.permanentAddress || prev.permanentAddress,
+                }));
+            }
+
+            setOcrResultDialogOpen(false);
+            showSuccess('Thông tin được điền tự động từ CCCD');
+        } catch (error) {
+            console.error('Error confirming OCR results:', error);
+            showError('Lỗi khi lưu dữ liệu');
+        }
+    };
+
+    const handleCloseOcrResultsDialog = () => {
+        setOcrResultDialogOpen(false);
+        // If user closes without confirming, we still keep the captured images
+    };
+
+    // Legacy camera handling functions
 
     const handleCloseCamera = () => {
         if (stream) {
@@ -86,7 +172,7 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
 
     useEffect(() => {
         if (editingTenant) {
-            setFormData({
+            const tenantData = {
                 fullName: editingTenant.fullName || '',
                 phone: editingTenant.phone || '',
                 citizenId: editingTenant.citizenId || '',
@@ -94,9 +180,12 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                 permanentAddress: editingTenant.permanentAddress || '',
                 citizenIdFrontUrl: editingTenant.citizenIdFrontUrl || '',
                 citizenIdBackUrl: editingTenant.citizenIdBackUrl || '',
-            });
+            };
+            setFormData(tenantData);
+            setOriginalData(tenantData);
         } else {
             setFormData(INITIAL_TENANT_FORM_DATA);
+            setOriginalData(INITIAL_TENANT_FORM_DATA);
         }
     }, [editingTenant, open]);
 
@@ -123,6 +212,19 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
             showError(error);
         }
     };
+
+    // Check if form data has changed from original
+    const hasChanged = JSON.stringify(formData) !== JSON.stringify(originalData);
+
+    // Check if all required fields are filled
+    const isFormValid = formData.citizenIdFrontUrl && formData.citizenIdBackUrl;
+
+    // Submit button should be enabled when:
+    // - For new tenant: all required fields filled
+    // - For editing tenant: data has changed AND all required fields filled
+    const isSubmitDisabled = editingTenant
+        ? !hasChanged || !isFormValid
+        : !isFormValid;
 
     return (
         <Dialog open={open} onClose={handleCloseDialog} fullScreen>
@@ -220,109 +322,114 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                             <label className="text-sm font-semibold text-gray-700">
                                 Ảnh Căn cước công dân (Bắt buộc)
                             </label>
+                            
+                            {/* Toggle Slider */}
+                            <div className="relative inline-flex bg-gray-100/80 backdrop-blur-sm p-1 rounded-xl shadow-inner mt-1 mb-2 w-full sm:w-80">
+                                <div 
+                                    className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-transform duration-300 ${
+                                        useOcrFlow ? 'translate-x-[calc(100%+4px)]' : 'translate-x-0'
+                                    }`}
+                                />
+                                
+                                <button 
+                                    type="button"
+                                    onClick={() => setUseOcrFlow(false)}
+                                    className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold transition-colors duration-300 ${
+                                        !useOcrFlow ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <Camera size={16} />
+                                    Camera thường
+                                </button>
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => setUseOcrFlow(true)}
+                                    className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-semibold transition-colors duration-300 ${
+                                        useOcrFlow ? 'text-indigo-600' : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <Zap size={16} className={useOcrFlow ? "text-amber-500" : ""} />
+                                    OCR (AI)
+                                </button>
+                            </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-1">
                                 {/* Front Side */}
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-xs text-gray-500 font-medium">Mặt trước CCCD</span>
+                                <div className="flex flex-col gap-1">
                                     {formData.citizenIdFrontUrl ? (
-                                        <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[1.586] bg-gray-50 group shadow-sm flex items-center justify-center">
-                                            <img
-                                                src={formData.citizenIdFrontUrl}
-                                                alt="Mặt trước CCCD"
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    color="primary"
-                                                    startIcon={<Camera size={14} />}
-                                                    onClick={() => {
-                                                        setCameraSide('front');
-                                                        setCameraOpen(true);
-                                                    }}
-                                                    sx={{ borderRadius: '20px', textTransform: 'none', py: 0.5 }}
-                                                >
-                                                    Chụp lại
-                                                </Button>
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    color="error"
-                                                    startIcon={<Trash2 size={14} />}
-                                                    onClick={() => setFormData(prev => ({ ...prev, citizenIdFrontUrl: '' }))}
-                                                    sx={{ borderRadius: '20px', textTransform: 'none', py: 0.5 }}
-                                                >
-                                                    Xóa
-                                                </Button>
-                                            </div>
-                                        </div>
+                                        <CccdImage
+                                            url={formData.citizenIdFrontUrl}
+                                            label="Mặt trước CCCD"
+                                            onRetake={() => {
+                                                if (useOcrFlow) {
+                                                    ocr.setCurrentSide('front');
+                                                } else {
+                                                    setCameraSide('front');
+                                                    setCameraOpen(true);
+                                                }
+                                            }}
+                                            onDelete={() => setFormData(prev => ({ ...prev, citizenIdFrontUrl: '' }))}
+                                        />
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setCameraSide('front');
-                                                setCameraOpen(true);
+                                                if (useOcrFlow) {
+                                                    ocr.setCurrentSide('front');
+                                                    // CameraDialog will be opened via state
+                                                } else {
+                                                    setCameraSide('front');
+                                                    setCameraOpen(true);
+                                                }
                                             }}
                                             className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-indigo-500 hover:bg-indigo-50/20 rounded-xl aspect-[1.586] bg-gray-50/50 transition-all cursor-pointer group"
                                         >
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 group-hover:text-indigo-600 transition-colors">
                                                 <Camera size={20} />
                                             </div>
-                                            <span className="text-xs text-gray-500 font-medium group-hover:text-indigo-600 transition-colors">Chụp ảnh mặt trước</span>
+                                            <span className="text-xs text-gray-500 font-medium group-hover:text-indigo-600 transition-colors">
+                                                {useOcrFlow ? 'Chụp (AI)' : 'Chụp ảnh'}
+                                            </span>
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Back Side */}
-                                <div className="flex flex-col gap-1.5">
-                                    <span className="text-xs text-gray-500 font-medium">Mặt sau CCCD</span>
+                                <div className="flex flex-col gap-1">
                                     {formData.citizenIdBackUrl ? (
-                                        <div className="relative rounded-xl overflow-hidden border border-gray-200 aspect-[1.586] bg-gray-50 group shadow-sm flex items-center justify-center">
-                                            <img
-                                                src={formData.citizenIdBackUrl}
-                                                alt="Mặt sau CCCD"
-                                                className="w-full h-full object-cover"
-                                            />
-                                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    color="primary"
-                                                    startIcon={<Camera size={14} />}
-                                                    onClick={() => {
-                                                        setCameraSide('back');
-                                                        setCameraOpen(true);
-                                                    }}
-                                                    sx={{ borderRadius: '20px', textTransform: 'none', py: 0.5 }}
-                                                >
-                                                    Chụp lại
-                                                </Button>
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    color="error"
-                                                    startIcon={<Trash2 size={14} />}
-                                                    onClick={() => setFormData(prev => ({ ...prev, citizenIdBackUrl: '' }))}
-                                                    sx={{ borderRadius: '20px', textTransform: 'none', py: 0.5 }}
-                                                >
-                                                    Xóa
-                                                </Button>
-                                            </div>
-                                        </div>
+                                        <CccdImage
+                                            url={formData.citizenIdBackUrl}
+                                            label="Mặt sau CCCD"
+                                            onRetake={() => {
+                                                if (useOcrFlow) {
+                                                    ocr.setCurrentSide('back');
+                                                } else {
+                                                    setCameraSide('back');
+                                                    setCameraOpen(true);
+                                                }
+                                            }}
+                                            onDelete={() => setFormData(prev => ({ ...prev, citizenIdBackUrl: '' }))}
+                                        />
                                     ) : (
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                setCameraSide('back');
-                                                setCameraOpen(true);
+                                                if (useOcrFlow) {
+                                                    ocr.setCurrentSide('back');
+                                                    // CameraDialog will be opened via state
+                                                } else {
+                                                    setCameraSide('back');
+                                                    setCameraOpen(true);
+                                                }
                                             }}
                                             className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-300 hover:border-indigo-500 hover:bg-indigo-50/20 rounded-xl aspect-[1.586] bg-gray-50/50 transition-all cursor-pointer group"
                                         >
                                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-gray-400 group-hover:text-indigo-600 transition-colors">
                                                 <Camera size={20} />
                                             </div>
-                                            <span className="text-xs text-gray-500 font-medium group-hover:text-indigo-600 transition-colors">Chụp ảnh mặt sau</span>
+                                            <span className="text-xs text-gray-500 font-medium group-hover:text-indigo-600 transition-colors">
+                                                {useOcrFlow ? 'Chụp (AI)' : 'Chụp ảnh'}
+                                            </span>
                                         </button>
                                     )}
                                 </div>
@@ -334,6 +441,8 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                                     <span>Vui lòng chụp đầy đủ cả mặt trước và mặt sau CCCD để có thể lưu thông tin.</span>
                                 </div>
                             )}
+
+                            {/* Removed old toggle */}
                         </div>
                     </div>
                 </DialogContent>
@@ -342,13 +451,13 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                     <Button
                         type="submit"
                         variant="contained"
-                        disabled={!formData.citizenIdFrontUrl || !formData.citizenIdBackUrl}
+                        disabled={isSubmitDisabled}
                         sx={{
-                            background: !formData.citizenIdFrontUrl || !formData.citizenIdBackUrl
+                            background: isSubmitDisabled
                                 ? undefined
                                 : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                             '&:hover': {
-                                background: !formData.citizenIdFrontUrl || !formData.citizenIdBackUrl
+                                background: isSubmitDisabled
                                     ? undefined
                                     : 'linear-gradient(135deg, #5568d3 0%, #65408a 100%)',
                             }
@@ -422,6 +531,26 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* OCR Camera Dialog */}
+            <CameraDialog
+                open={useOcrFlow && (ocr.currentSide === 'front' || ocr.currentSide === 'back')}
+                onClose={() => ocr.reset()}
+                onCaptureComplete={handleOcrCaptureComplete}
+                initialSide={ocr.currentSide}
+                ocr={ocr}
+            />
+
+            {/* OCR Results Verification Dialog */}
+            <OcrResultsDialog
+                open={ocrResultDialogOpen}
+                onClose={handleCloseOcrResultsDialog}
+                ocrResult={ocrResult}
+                isLoading={isOcrProcessing}
+                onConfirm={handleOcrResultsConfirm}
+                onCancel={handleCloseOcrResultsDialog}
+            />
+
         </Dialog>
     );
 }
