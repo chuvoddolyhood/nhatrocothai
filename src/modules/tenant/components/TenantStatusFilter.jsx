@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { STATUS_FILTERS } from '../../../supabase/caseUtils';
+import { STATUS_FILTERS } from '../dto/TenantDTO';
 
 export function TenantStatusFilter({ value, onChange, headerTop = 90, collapsedTop = 8 }) {
     const [headerVisible, setHeaderVisible] = useState(true);
