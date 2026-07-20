@@ -39,6 +39,7 @@ const theme = createTheme({
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [headerConfig, setHeaderConfig] = useState(null);
+  const [tenantInitFilter, setTenantInitFilter] = useState(null);
 
   const handleViewChange = (view) => {
     if (view !== currentView) {
@@ -47,16 +48,24 @@ export default function App() {
     }
   };
 
+  const navigateTo = (view, options = {}) => {
+    setCurrentView(view);
+    setHeaderConfig(null);
+    if (view === 'tenants' && options.statusFilter) {
+      setTenantInitFilter(options.statusFilter);
+    }
+  };
+
   const renderContent = () => {
     switch (currentView) {
       case 'dashboard':
-        return <DashboardPage setHeaderConfig={setHeaderConfig} />;
+        return <DashboardPage setHeaderConfig={setHeaderConfig} onNavigate={navigateTo} />;
 
       case 'rooms':
         return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
 
       case 'tenants':
-        return <TenantListPage setHeaderConfig={setHeaderConfig} />;
+        return <TenantListPage setHeaderConfig={setHeaderConfig} initialStatusFilter={tenantInitFilter} />;
 
       case 'contracts':
         return <ContractListPage view={currentView} setHeaderConfig={setHeaderConfig} />;

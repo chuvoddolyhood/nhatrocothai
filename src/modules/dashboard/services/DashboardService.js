@@ -1,5 +1,5 @@
 import { supabase } from "../../../supabase/config";
-import { ROOMS, INVOICES } from "../../../supabase/DatabaseModel";
+import { ROOMS, INVOICES, CONTRACTS } from "../../../supabase/DatabaseModel";
 import { RoomStatus } from "../../room/constants/RoomStatus";
 import { toCamelCase } from "../../../supabase/caseUtils";
 
@@ -113,6 +113,39 @@ export const DashboardService = {
                 };
             });
 
+            // 5. Tổng điện/nước tháng hiện tại và tháng trước (từ invoices)
+            const prevDate = new Date();
+            prevDate.setMonth(prevDate.getMonth() - 1);
+            const prevMonth = prevDate.toISOString().slice(0, 7);
+
+            const { data: utilityRaw, error: utilityError } = await supabase
+                .from(INVOICES)
+                .select("month, electric_usage, water_usage")
+                .in("month", [targetMonth, prevMonth])
+                .neq("status", "CANCELLED");
+
+            if (utilityError) throw utilityError;
+
+            const currentUtility = utilityRaw.filter(i => i.month === targetMonth);
+            const prevUtility = utilityRaw.filter(i => i.month === prevMonth);
+
+            const totalElectric = currentUtility.reduce((s, i) => s + (i.electric_usage || 0), 0);
+            const totalWater = currentUtility.reduce((s, i) => s + (i.water_usage || 0), 0);
+            const prevTotalElectric = prevUtility.reduce((s, i) => s + (i.electric_usage || 0), 0);
+            const prevTotalWater = prevUtility.reduce((s, i) => s + (i.water_usage || 0), 0);
+
+            // 6. Tổng số khách đang thuê (từ contracts ACTIVE)
+            const { data: contractsRaw, error: contractsError } = await supabase
+                .from(CONTRACTS)
+                .select("id, contract_tenants ( tenant_id )")
+                .eq("status", "ACTIVE");
+
+            if (contractsError) throw contractsError;
+
+            const totalTenants = contractsRaw.reduce((sum, c) => {
+                return sum + (c.contract_tenants?.length || 0);
+            }, 0);
+
             return {
                 success: true,
                 data: {
@@ -127,6 +160,11 @@ export const DashboardService = {
                     actualRevenue,
                     recentInvoices,
                     monthlyRevenueChart,
+                    totalElectric,
+                    totalWater,
+                    prevTotalElectric,
+                    prevTotalWater,
+                    totalTenants,
                 }
             };
         } catch (error) {
