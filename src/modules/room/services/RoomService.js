@@ -7,13 +7,19 @@ import { ROOMS } from "../../../supabase/DatabaseModel";
 
 export const RoomService = {
     // Lấy danh sách phòng
-    async getRooms() {
+    async getRooms(status) {
         try {
-            const { data, error } = await supabase
+            let query = supabase
                 .from(ROOMS)
                 .select("*")
                 .neq("status", RoomStatus.ARCHIVED)
                 .order("created_at", { ascending: true });
+
+            if (status && status !== 'ALL') {
+                query = query.eq("status", status);
+            }
+
+            const { data, error } = await query;
 
             if (error) throw error;
 

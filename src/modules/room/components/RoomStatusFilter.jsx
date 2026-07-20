@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { STATUS_FILTERS } from '../dto/TenantDTO';
+import { STATUS_FILTERS } from '../dto/RoomDTO';
 
-export function TenantStatusFilter({ value, onChange, headerTop = 90, collapsedTop = 8 }) {
+export function RoomStatusFilter({ value, onChange, headerTop = 90, collapsedTop = 8 }) {
     const [headerVisible, setHeaderVisible] = useState(true);
     const lastScrollY = useRef(0);
 
@@ -42,6 +42,8 @@ export function TenantStatusFilter({ value, onChange, headerTop = 90, collapsedT
                     gap: 0,
                     boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)',
                     userSelect: 'none',
+                    width: '100%',
+                    maxWidth: '500px',
                 }}
             >
                 <div

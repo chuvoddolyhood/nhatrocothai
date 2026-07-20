@@ -176,6 +176,7 @@ export function DashboardPage({ setHeaderConfig, onNavigate }) {
       icon: Home,
       title: 'Số phòng đang ở',
       value: `${stats.occupiedRooms}/${stats.totalRooms}`,
+      onClick: () => onNavigate?.('rooms', { statusFilter: 'OCCUPIED' }),
     },
     {
       bgGradient: 'from-green-500 to-emerald-600',
