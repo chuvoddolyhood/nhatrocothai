@@ -34,3 +34,25 @@ export const ROOM_STATUS = {
         bgGradient: 'from-gray-400 to-gray-500',
     },
 };
+
+export const STATUS_FILTERS = [
+    {
+        value: 'ALL',
+        label: 'Tất cả',
+        bg: '#6366f1',
+        shadow: 'rgba(99,102,241,0.40)',
+    },
+    {
+        value: 'OCCUPIED',
+        label: 'Đang thuê',
+        bg: '#10b981',
+        shadow: 'rgba(16,185,129,0.40)',
+    },
+    {
+        value: 'AVAILABLE',
+        label: 'Phòng trống',
+        bg: '#f59e0b',
+        shadow: 'rgba(245,158,11,0.40)',
+    },
+
+];

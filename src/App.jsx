@@ -40,6 +40,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [headerConfig, setHeaderConfig] = useState(null);
   const [tenantInitFilter, setTenantInitFilter] = useState(null);
+  const [roomInitFilter, setRoomInitFilter] = useState(null);
 
   const handleViewChange = (view) => {
     if (view !== currentView) {
@@ -54,6 +55,9 @@ export default function App() {
     if (view === 'tenants' && options.statusFilter) {
       setTenantInitFilter(options.statusFilter);
     }
+    if (view === 'rooms' && options.statusFilter) {
+      setRoomInitFilter(options.statusFilter);
+    }
   };
 
   const renderContent = () => {
@@ -62,7 +66,7 @@ export default function App() {
         return <DashboardPage setHeaderConfig={setHeaderConfig} onNavigate={navigateTo} />;
 
       case 'rooms':
-        return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
+        return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} initialStatusFilter={roomInitFilter} />;
 
       case 'tenants':
         return <TenantListPage setHeaderConfig={setHeaderConfig} initialStatusFilter={tenantInitFilter} />;

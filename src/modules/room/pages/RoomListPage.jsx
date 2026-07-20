@@ -1,29 +1,38 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Button, Card, CardContent, Chip, Fab } from '@mui/material';
 import { Plus, Edit, Trash2, Home, Eye } from 'lucide-react';
 import InfoItem from '../../../shared/components/ui/InfoItem';
 import RoomFormDialog from '../components/RoomFormDialog';
 import { RoomDetailDialog } from '../components/RoomDetailDialog';
 import { RoomService } from '../services/RoomService';
-import Loading from '../../../shared/components/ui/Loading';
+import Loading, { SkeletonList } from '../../../shared/components/ui/Loading';
 import { INITIAL_ROOM_FORM_DATA, ROOM_STATUS } from '../dto/RoomDTO';
 import { useNotification } from '../../../shared/hooks/useNotification';
 import { RoomStatus } from '../constants/RoomStatus';
 import { getMenuLabel } from '../../../shared/components/common/MenuConfig';
+import { RoomStatusFilter } from '../components/RoomStatusFilter';
 
-export function RoomListPage({ view, setHeaderConfig }) {
+export function RoomListPage({ view, setHeaderConfig, initialStatusFilter }) {
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter || 'ALL');
   const [open, setOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState(null);
   const [formData, setFormData] = useState(INITIAL_ROOM_FORM_DATA);
   const [detailOpen, setDetailOpen] = useState(false);
   const [viewingRoom, setViewingRoom] = useState(null);
   const [rooms, setRooms] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [listLoading, setListLoading] = useState(false);
+  const isFirstLoad = useRef(true);
   const { showSuccess, showError } = useNotification();
 
-  const fetchRooms = async () => {
+  const fetchRooms = async (status = statusFilter) => {
     try {
-      const response = await RoomService.getRooms();
+      if (isFirstLoad.current) {
+        setInitialLoading(true);
+      } else {
+        setListLoading(true);
+      }
+      const response = await RoomService.getRooms(status);
 
       if (response.success) {
 
@@ -50,13 +59,17 @@ export function RoomListPage({ view, setHeaderConfig }) {
     } catch (error) {
       showError(error);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setListLoading(false);
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+      }
     }
   };
 
   useEffect(() => {
     fetchRooms();
-  }, []);
+  }, [statusFilter]);
 
 
   const handleOpen = (room) => {
@@ -120,11 +133,24 @@ export function RoomListPage({ view, setHeaderConfig }) {
 
   return (
     <>
-      {loading ? <Loading /> :
-        <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
+      {initialLoading ? <Loading /> :
+        <div className="p-4 pb-24 bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen" style={{ paddingTop: '56px' }}>
+
+          <RoomStatusFilter
+            value={statusFilter}
+            onChange={(_, val) => {
+              if (val !== statusFilter) {
+                setStatusFilter(val);
+              }
+            }}
+          />
 
           <div className="grid grid-cols-1 gap-4">
-            {rooms.map((room) => (
+            {listLoading ? (
+              <SkeletonList count={3} />
+            ) : rooms.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">Chưa có phòng nào.</div>
+            ) : rooms.map((room) => (
               <Card
                 key={room.id}
                 sx={{
