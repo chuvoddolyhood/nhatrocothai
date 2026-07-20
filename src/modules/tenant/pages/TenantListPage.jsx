@@ -12,7 +12,7 @@ import InfoItem from '../../../shared/components/ui/InfoItem';
 import { TenantStatus, TenantStatusLabel } from '../constants/TenantStatus';
 import { useNotification } from '../../../shared/hooks/useNotification';
 
-export function TenantListPage({ setHeaderConfig }) {
+export function TenantListPage({ setHeaderConfig, initialStatusFilter }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [listLoading, setListLoading] = useState(false);
   const isFirstLoad = useRef(true);
@@ -28,7 +28,7 @@ export function TenantListPage({ setHeaderConfig }) {
   const [viewingTenant, setViewingTenant] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(0);
 
-  const [statusFilter, setStatusFilter] = useState(TenantStatus.ACTIVE);
+  const [statusFilter, setStatusFilter] = useState(initialStatusFilter || TenantStatus.ACTIVE);
 
   const contractsRef = useRef([]);
   const roomsRef = useRef([]);

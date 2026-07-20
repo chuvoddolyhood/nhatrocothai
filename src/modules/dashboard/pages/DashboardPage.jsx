@@ -1,9 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Card, CardContent, Skeleton } from '@mui/material';
 import {
-  Home, Users, DollarSign, TrendingUp, AlertCircle,
+  Home, Users, DollarSign, Receipt, CreditCard,
   CheckCircle2, XCircle, ChevronLeft, ChevronRight,
-  RefreshCw, Wrench, CalendarCheck
+  RefreshCw, CalendarCheck, Zap, Droplets
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
@@ -123,11 +123,13 @@ const RecentInvoiceItem = ({ invoice }) => {
 // ─────────────────────────────────────────────────────────
 // Main DashboardPage
 // ─────────────────────────────────────────────────────────
-export function DashboardPage({ setHeaderConfig }) {
+export function DashboardPage({ setHeaderConfig, onNavigate }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [monthOffset, setMonthOffset] = useState(0);
+  const [showInvoices, setShowInvoices] = useState(false);
+  const invoicesCardRef = useRef(null);
   const { showError } = useNotification();
 
   const currentMonth = getMonthOffset(monthOffset);
@@ -172,30 +174,35 @@ export function DashboardPage({ setHeaderConfig }) {
     {
       bgGradient: 'from-indigo-500 to-purple-600',
       icon: Home,
-      title: 'Tổng phòng',
-      value: stats.totalRooms,
+      title: 'Số phòng đang ở',
+      value: `${stats.occupiedRooms}/${stats.totalRooms}`,
     },
     {
       bgGradient: 'from-green-500 to-emerald-600',
       icon: Users,
-      title: 'Đang thuê',
-      value: stats.occupiedRooms,
+      title: 'Số khách thuê',
+      value: stats.totalTenants,
+      onClick: () => onNavigate?.('tenants', { statusFilter: 'ACTIVE' }),
     },
     {
-      bgGradient: 'from-orange-400 to-amber-500',
-      icon: AlertCircle,
-      title: 'Phòng trống',
-      value: stats.emptyRooms,
+      bgGradient: 'from-amber-500 to-orange-600',
+      icon: Zap,
+      title: 'Tổng điện',
+      value: `${stats.totalElectric.toLocaleString('vi-VN')} kWh`,
+      subValue: {
+        amount: stats.totalElectric - stats.prevTotalElectric,
+        unit: 'kWh',
+      },
     },
     {
-      bgGradient: 'from-blue-500 to-cyan-500',
-      icon: stats.maintenanceRooms > 0 ? Wrench : TrendingUp,
-      title: stats.maintenanceRooms > 0 ? 'Bảo trì' : 'Tỷ lệ thu',
-      value: stats.maintenanceRooms > 0
-        ? stats.maintenanceRooms
-        : `${stats.occupiedRooms > 0
-          ? Math.round((stats.paidThisMonth / stats.occupiedRooms) * 100)
-          : 0}%`,
+      bgGradient: 'from-sky-500 to-slate-600',
+      icon: Droplets,
+      title: 'Tổng nước',
+      value: `${stats.totalWater.toLocaleString('vi-VN')} m³`,
+      subValue: {
+        amount: stats.totalWater - stats.prevTotalWater,
+        unit: 'm³',
+      },
     },
   ] : [];
 
@@ -379,124 +386,134 @@ export function DashboardPage({ setHeaderConfig }) {
       {/* ── Payment Status ── */}
       <Card sx={{ ...cardStyle, mb: 3 }}>
         <CardContent sx={{ p: '16px !important' }}>
-          <h2 className="text-base font-semibold mb-4 text-gray-800">
+          <h2 className="text-base font-semibold mb-4 text-gray-800 flex items-center gap-2">
+            <CreditCard size={17} className="text-indigo-500" />
             Tình trạng thanh toán
           </h2>
 
           {loading ? (
-            <div className="space-y-3">
-              <Skeleton variant="rounded" height={40} animation="wave" />
-              <Skeleton variant="rounded" height={40} animation="wave" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {paymentStatusItems.map((item) => (
-                <ProgressBarDashboard
-                  key={item.label}
-                  total={stats.occupiedRooms}
-                  {...item}
-                />
-              ))}
-            </div>
-          )}
+            <Skeleton variant="rounded" height={40} animation="wave" />
+          ) : (() => {
+            const total = (stats.paidThisMonth || 0) + (stats.unpaidThisMonth || 0);
+            const paidPct = total > 0 ? (stats.paidThisMonth / total) * 100 : 0;
+            const unpaidPct = 100 - paidPct;
+            return (
+              <div>
+                {/* Số liệu 2 bên */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>
+                    {stats.paidThisMonth} đã đóng
+                  </span>
+                  <span style={{ fontSize: 13, color: '#ea580c', fontWeight: 600 }}>
+                    {stats.unpaidThisMonth} chưa đóng
+                  </span>
+                </div>
+
+                {/* Thanh gộp */}
+                <div style={{
+                  display: 'flex',
+                  height: 10,
+                  borderRadius: 99,
+                  overflow: 'hidden',
+                  background: '#e5e7eb',
+                }}>
+                  {paidPct > 0 && (
+                    <div style={{
+                      width: `${paidPct}%`,
+                      background: 'linear-gradient(90deg, #4ade80, #16a34a)',
+                      transition: 'width 0.6s ease',
+                    }} />
+                  )}
+                  {unpaidPct > 0 && (
+                    <div style={{
+                      width: `${unpaidPct}%`,
+                      background: 'linear-gradient(90deg, #fb923c, #ea580c)',
+                      transition: 'width 0.6s ease',
+                    }} />
+                  )}
+                </div>
+
+                {/* Phần trăm */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
+                  <span style={{ fontSize: 11, color: '#9ca3af' }}>{paidPct.toFixed(0)}%</span>
+                  <span style={{ fontSize: 11, color: '#9ca3af' }}>{unpaidPct.toFixed(0)}%</span>
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
-      {/* ── Revenue Chart (6 months) ── */}
-      <Card sx={{ ...cardStyle, mb: 3 }}>
-        <CardContent sx={{ p: '16px !important' }}>
-          <h2 className="text-base font-semibold mb-4 text-gray-800">
-            Xu hướng doanh thu 6 tháng
-          </h2>
-
-          {loading ? (
-            <Skeleton variant="rounded" height={200} animation="wave" />
-          ) : (
-            <ResponsiveContainer width="100%" height={210}>
-              <AreaChart
-                data={stats.monthlyRevenueChart}
-                margin={{ top: 5, right: 4, left: -20, bottom: 0 }}
-              >
-                <defs>
-                  <linearGradient id="gradExpected" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradActual" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 11, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}tr`}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 12 }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="expected"
-                  name="Dự kiến"
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  fill="url(#gradExpected)"
-                  dot={{ r: 3, fill: '#6366f1' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="actual"
-                  name="Đã thu"
-                  stroke="#10b981"
-                  strokeWidth={2.5}
-                  fill="url(#gradActual)"
-                  dot={{ r: 3, fill: '#10b981' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
 
       {/* ── Recent Invoices ── */}
-      <Card sx={{ ...cardStyle }}>
+      <Card ref={invoicesCardRef} sx={{ ...cardStyle }}>
         <CardContent sx={{ p: '16px !important' }}>
-          <h2 className="text-base font-semibold mb-4 text-gray-800">
-            Hóa đơn gần đây
-          </h2>
+          {/* Header – luôn hiện, click để toggle */}
+          <button
+            onClick={() => {
+              const next = !showInvoices;
+              setShowInvoices(next);
+              if (next) {
+                // Đợi animation bắt đầu rồi scroll
+                setTimeout(() => {
+                  invoicesCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 50);
+              }
+            }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <h2 className="text-base font-semibold text-gray-800 flex items-center gap-2" style={{ margin: 0 }}>
+              <Receipt size={17} className="text-indigo-500" />
+              Hóa đơn gần đây
+            </h2>
+            <ChevronRight
+              size={18}
+              color="#6b7280"
+              style={{
+                transition: 'transform 0.25s ease',
+                transform: showInvoices ? 'rotate(90deg)' : 'rotate(0deg)',
+              }}
+            />
+          </button>
 
-          {loading ? (
-            <div>
-              {[1, 2, 3].map(i => (
-                <Skeleton key={i} variant="rounded" height={58} animation="wave" sx={{ mb: 1 }} />
-              ))}
-            </div>
-          ) : stats.recentInvoices.length === 0 ? (
-            <div style={{
-              textAlign: 'center', color: '#9ca3af',
-              padding: '24px 0', fontSize: '14px',
-            }}>
-              Chưa có hóa đơn nào
-            </div>
-          ) : (
-            <div>
-              {stats.recentInvoices.map(inv => (
-                <RecentInvoiceItem key={inv.id} invoice={inv} />
-              ))}
-            </div>
-          )}
+          {/* Collapsible body */}
+          <div style={{
+            overflow: 'hidden',
+            maxHeight: showInvoices ? '800px' : '0px',
+            transition: 'max-height 0.35s ease, opacity 0.25s ease, margin-top 0.25s ease',
+            opacity: showInvoices ? 1 : 0,
+            marginTop: showInvoices ? '12px' : '0px',
+          }}>
+            {loading ? (
+              <div>
+                {[1, 2, 3].map(i => (
+                  <Skeleton key={i} variant="rounded" height={58} animation="wave" sx={{ mb: 1 }} />
+                ))}
+              </div>
+            ) : stats.recentInvoices.length === 0 ? (
+              <div style={{
+                textAlign: 'center', color: '#9ca3af',
+                padding: '24px 0', fontSize: '14px',
+              }}>
+                Chưa có hóa đơn nào
+              </div>
+            ) : (
+              <div>
+                {stats.recentInvoices.map(inv => (
+                  <RecentInvoiceItem key={inv.id} invoice={inv} />
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
