@@ -4,6 +4,7 @@ import { RoomStatus } from "../constants/RoomStatus";
 import { notificationRef } from "../../../shared/contexts/NotificationContext";
 import { RoomPriceService } from "./RoomPriceService";
 import { ROOMS } from "../../../supabase/DatabaseModel";
+import { mapSupabaseError } from "../../../utils/supabaseErrorMapper";
 
 export const RoomService = {
     // Lấy danh sách phòng
@@ -32,8 +33,9 @@ export const RoomService = {
             return { success: true, data: rooms };
 
         } catch (error) {
-            notificationRef.current?.showError(error);
-            return { success: false, error: error.message };
+            const friendlyError = mapSupabaseError(error);
+            notificationRef.current?.showError(friendlyError);
+            return { success: false, error: friendlyError };
         }
     },
 
@@ -74,8 +76,9 @@ export const RoomService = {
             };
 
         } catch (error) {
-            notificationRef.current?.showError(error);
-            return { success: false, error: error.message };
+            const friendlyError = mapSupabaseError(error);
+            notificationRef.current?.showError(friendlyError);
+            return { success: false, error: friendlyError };
         }
     },
 
@@ -128,8 +131,9 @@ export const RoomService = {
             };
 
         } catch (error) {
-            notificationRef.current?.showError(error);
-            return { success: false, error: error.message };
+            const friendlyError = mapSupabaseError(error);
+            notificationRef.current?.showError(friendlyError);
+            return { success: false, error: friendlyError };
         }
     },
 
@@ -148,8 +152,9 @@ export const RoomService = {
 
             return { success: true };
         } catch (error) {
-            notificationRef.current?.showError(error);
-            return { success: false, error: error.message };
+            const friendlyError = mapSupabaseError(error);
+            notificationRef.current?.showError(friendlyError);
+            return { success: false, error: friendlyError };
         }
     }
 

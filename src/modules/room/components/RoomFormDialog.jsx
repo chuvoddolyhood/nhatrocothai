@@ -55,7 +55,7 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
 
         } else {
             const result = await RoomService.addRoom(formData);
-            
+
             if (result.success) {
                 showSuccess("Thêm phòng thành công");
                 if (onSuccess) {
@@ -95,7 +95,7 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
                             required
                             value={formData.roomId ?? ''}
                             onChange={handleChange('roomId')}
-                            slotProps={{ htmlInput: { maxLength: 50 } }}
+                            slotProps={{ htmlInput: { maxLength: 10 } }}
                         />
 
                         <FormControl fullWidth>
@@ -146,7 +146,7 @@ const RoomFormDialog = ({ open, editingRoom, formData, setFormData, onClose, onS
                             fullWidth
                             value={formData.floor ?? ''}
                             onChange={handleNumberChange('floor')}
-                            slotProps={{ htmlInput: { maxLength: 50 } }}
+                            slotProps={{ htmlInput: { maxLength: 3 } }}
                         />
 
                         <TextField

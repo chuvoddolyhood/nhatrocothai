@@ -219,13 +219,19 @@ export const ContractService = {
 
             if (fetchError) throw fetchError;
 
+            const updateFields = {
+                status: status, // 'TERMINATED' hoặc 'EXPIRED'
+                updated_at: new Date().toISOString(),
+                updated_by: 1,
+            };
+
+            if (status === ContractStatus.TERMINATED) {
+                updateFields.end_date = new Date().toLocaleDateString('sv-SE');
+            }
+
             const { error } = await supabase
                 .from(CONTRACTS)
-                .update({
-                    status: status, // 'TERMINATED' hoặc 'EXPIRED'
-                    updated_at: new Date().toISOString(),
-                    updated_by: 1,
-                })
+                .update(updateFields)
                 .eq("id", contractId);
 
             if (error) throw error;

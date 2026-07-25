@@ -37,7 +37,11 @@ const theme = createTheme({
 });
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
+  const [currentView, setCurrentView] = useState(() => {
+    const saved = localStorage.getItem('currentView');
+    const validViews = ['dashboard', 'rooms', 'tenants', 'contracts', 'billing', 'reports'];
+    return validViews.includes(saved) ? saved : 'dashboard';
+  });
   const [headerConfig, setHeaderConfig] = useState(null);
   const [tenantInitFilter, setTenantInitFilter] = useState(null);
   const [roomInitFilter, setRoomInitFilter] = useState(null);
@@ -45,12 +49,14 @@ export default function App() {
   const handleViewChange = (view) => {
     if (view !== currentView) {
       setCurrentView(view);
+      localStorage.setItem('currentView', view);
       setHeaderConfig(null);
     }
   };
 
   const navigateTo = (view, options = {}) => {
     setCurrentView(view);
+    localStorage.setItem('currentView', view);
     setHeaderConfig(null);
     if (view === 'tenants' && options.statusFilter) {
       setTenantInitFilter(options.statusFilter);

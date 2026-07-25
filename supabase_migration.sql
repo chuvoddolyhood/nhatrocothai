@@ -44,8 +44,8 @@ CREATE TABLE public.property_users (
 CREATE TABLE public.rooms (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
   property_id bigint NOT NULL,
-  room_code character varying NOT NULL,
-  floor character varying,
+  room_code character varying(10) NOT NULL,
+  floor character varying(3),
   area numeric,
   status character varying NOT NULL,
   current_contract_id bigint,
@@ -57,7 +57,8 @@ CREATE TABLE public.rooms (
   CONSTRAINT rooms_pkey PRIMARY KEY (id),
   CONSTRAINT rooms_property_id_fkey FOREIGN KEY (property_id) REFERENCES public.properties(id),
   CONSTRAINT rooms_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id),
-  CONSTRAINT rooms_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id)
+  CONSTRAINT rooms_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES public.users(id),
+  CONSTRAINT unique_property_room UNIQUE (property_id, room_code)
 );
 
 -- 5. Bảng tenants (Khách thuê)
