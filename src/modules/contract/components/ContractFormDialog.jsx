@@ -118,6 +118,24 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (formData.endDate) {
+            const end = dayjs(formData.endDate).startOf('day');
+            const start = formData.startDate ? dayjs(formData.startDate).startOf('day') : null;
+            const today = dayjs().startOf('day');
+
+            if (start && !end.isAfter(start)) {
+                showError("Ngày kết thúc hợp đồng phải lớn hơn ngày bắt đầu");
+                return;
+            }
+
+            const isUnchangedEdit = editingContract && formData.endDate === editingContract.endDate;
+            if (!isUnchangedEdit && end.isBefore(today)) {
+                showError("Ngày kết thúc hợp đồng phải lớn hơn hoặc bằng ngày hiện tại");
+                return;
+            }
+        }
+
         try {
             let result;
             if (editingContract) {
@@ -144,6 +162,43 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
         room.propertyId === formData.propertyId &&
         (room.status === RoomStatus.AVAILABLE || room.id === formData.roomId)
     );
+
+    const minEndDate = (() => {
+        const today = dayjs().startOf('day');
+        const start = formData.startDate ? dayjs(formData.startDate).startOf('day') : null;
+
+        if (editingContract && formData.endDate === editingContract.endDate && formData.endDate) {
+            return dayjs(formData.endDate).startOf('day');
+        }
+
+        if (!start) return today;
+
+        const startPlusOne = start.add(1, 'day');
+        return startPlusOne.isAfter(today) ? startPlusOne : today;
+    })();
+
+    const endDateError = (() => {
+        if (!formData.endDate) return '';
+
+        const end = dayjs(formData.endDate).startOf('day');
+        if (!end.isValid()) {
+            return "Ngày không hợp lệ";
+        }
+
+        const start = formData.startDate ? dayjs(formData.startDate).startOf('day') : null;
+        const today = dayjs().startOf('day');
+
+        if (start && !end.isAfter(start)) {
+            return "Ngày kết thúc hợp đồng phải lớn hơn ngày bắt đầu";
+        }
+
+        const isUnchangedEdit = editingContract && formData.endDate === editingContract.endDate;
+        if (!isUnchangedEdit && end.isBefore(today)) {
+            return "Ngày kết thúc hợp đồng phải lớn hơn hoặc bằng ngày hiện tại";
+        }
+
+        return '';
+    })();
 
     return (
         <Dialog open={open} onClose={onClose} fullScreen>
@@ -288,9 +343,12 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                                         endDate: newValue?.format('YYYY-MM-DD') || ''
                                     })
                                 }
+                                minDate={minEndDate}
                                 slotProps={{
                                     textField: {
                                         fullWidth: true,
+                                        error: !!endDateError,
+                                        helperText: endDateError,
                                     },
                                 }}
                             />
@@ -303,7 +361,14 @@ export function ContractFormDialog({ open, onClose, onSuccess, editingContract }
                                     labelId="status-select-label"
                                     value={formData.status}
                                     label="Trạng thái hợp đồng"
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    onChange={(e) => {
+                                        const newStatus = e.target.value;
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            status: newStatus,
+                                            endDate: newStatus === 'TERMINATED' ? dayjs().format('YYYY-MM-DD') : prev.endDate
+                                        }));
+                                    }}
                                 >
                                     <MenuItem value="ACTIVE">{ContractStatusLabel.ACTIVE}</MenuItem>
                                     <MenuItem value="EXPIRED">{ContractStatusLabel.EXPIRED}</MenuItem>

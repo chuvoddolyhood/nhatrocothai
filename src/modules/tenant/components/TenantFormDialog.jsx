@@ -252,7 +252,7 @@ export function TenantFormDialog({ open, onClose, onSuccess, editingTenant }) {
                             required
                             slotProps={{
                                 htmlInput: {
-                                    maxLength: 9
+                                    maxLength: 11
                                 }
                             }}
                             value={formData.phone}
