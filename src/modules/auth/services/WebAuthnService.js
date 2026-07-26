@@ -1,13 +1,10 @@
+import { supabase } from '../../../supabase/config';
+
+const PASSKEY_FLAG_KEY = 'passkey_registered';
+
 /**
- * WebAuthnService — Stub chuẩn bị sẵn cho tích hợp Face ID / Passkey (WebAuthn).
- *
- * Hiện tại: tất cả methods đều trả về trạng thái "chưa hỗ trợ".
- * Khi backend sẵn sàng, chỉ cần implement phần body của từng method
- * mà không cần thay đổi interface hay UI.
- *
- * Flow dự kiến (tương lai):
- *   Lần đầu: Login bằng SĐT/MK → sau khi thành công → gọi register()
- *   Lần sau: Nếu isRegistered() → hiển thị button → gọi authenticate()
+ * WebAuthnService — Quản lý Đăng nhập bằng Face ID / Touch ID (Passkeys).
+ * Sử dụng Supabase Experimental Passkeys.
  */
 export const WebAuthnService = {
   /**
@@ -24,47 +21,60 @@ export const WebAuthnService = {
 
   /**
    * Kiểm tra thiết bị này đã đăng ký Passkey chưa.
-   * Hiện tại: luôn trả về false (chưa implement backend).
-   * Tương lai: kiểm tra localStorage hoặc gọi API.
+   * Supabase lưu trữ public key trên server. Ta lưu 1 flag nhỏ dưới localStorage
+   * để biết thiết bị này có khả năng dùng Face ID hay không (nhằm mục đích bật/tắt nút giao diện).
    * @returns {boolean}
    */
   isRegistered() {
-    // TODO: Implement khi có backend WebAuthn
-    // Ví dụ: return !!localStorage.getItem('webauthn_credential_id');
-    return false;
+    return localStorage.getItem(PASSKEY_FLAG_KEY) === 'true';
   },
 
   /**
-   * Đăng ký Passkey mới cho thiết bị này sau khi đăng nhập thành công.
-   * @param {string} userId
-   * @returns {Promise<{ success: boolean }>}
+   * Đăng ký Passkey mới cho thiết bị này.
+   * Chỉ hoạt động khi người dùng ĐÃ ĐĂNG NHẬP bằng mật khẩu thành công.
+   * @returns {Promise<{ success: boolean, error?: string }>}
    */
-  async register(userId) {
-    // TODO: Implement WebAuthn registration flow
-    // 1. Gọi backend để lấy PublicKeyCredentialCreationOptions
-    // 2. Gọi navigator.credentials.create()
-    // 3. Gửi credential về backend để lưu
-    throw new Error('[WebAuthnService] register() chưa được implement. Cần có backend WebAuthn.');
+  async register() {
+    try {
+      const { data, error } = await supabase.auth.registerPasskey();
+      if (error) {
+        console.error('[WebAuthnService] Lỗi khi đăng ký Passkey:', error.message);
+        return { success: false, error: error.message };
+      }
+      
+      // Đánh dấu thiết bị này đã có passkey
+      localStorage.setItem(PASSKEY_FLAG_KEY, 'true');
+      return { success: true };
+    } catch (err) {
+      console.error('[WebAuthnService] Lỗi không mong đợi khi đăng ký Passkey:', err);
+      return { success: false, error: 'Lỗi khi thiết lập Face ID' };
+    }
   },
 
   /**
    * Xác thực bằng Passkey (Face ID / Touch ID).
-   * @returns {Promise<{ success: boolean, token?: string }>}
+   * Sử dụng Discoverable Credentials (không cần nhập email).
+   * @returns {Promise<{ success: boolean, error?: string }>}
    */
   async authenticate() {
-    // TODO: Implement WebAuthn authentication flow
-    // 1. Gọi backend để lấy PublicKeyCredentialRequestOptions
-    // 2. Gọi navigator.credentials.get()
-    // 3. Gửi assertion về backend để verify và nhận JWT
-    throw new Error('[WebAuthnService] authenticate() chưa được implement. Cần có backend WebAuthn.');
+    try {
+      const { data, error } = await supabase.auth.signInWithPasskey();
+      if (error) {
+        console.error('[WebAuthnService] Lỗi khi đăng nhập bằng Passkey:', error.message);
+        return { success: false, error: 'Đăng nhập Face ID thất bại hoặc bị hủy' };
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('[WebAuthnService] Lỗi không mong đợi khi đăng nhập:', err);
+      return { success: false, error: 'Lỗi hệ thống khi đăng nhập Face ID' };
+    }
   },
 
   /**
-   * Xoá Passkey đã đăng ký trên thiết bị này.
+   * Đánh dấu huỷ đăng ký Passkey trên thiết bị này.
    * @returns {void}
    */
   unregister() {
-    // TODO: Implement khi có backend WebAuthn
-    // localStorage.removeItem('webauthn_credential_id');
+    localStorage.removeItem(PASSKEY_FLAG_KEY);
   },
 };
