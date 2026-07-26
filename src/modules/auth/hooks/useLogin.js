@@ -26,6 +26,7 @@ export function useLogin() {
   const [errors, setErrors] = useState(INITIAL_LOGIN_ERRORS);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasskeyPrompt, setShowPasskeyPrompt] = useState(false);
 
   // Kiểm tra Face ID: chỉ hiển thị nếu thiết bị đã đăng ký
   const isFaceIdRegistered = WebAuthnService.isRegistered();
@@ -35,40 +36,28 @@ export function useLogin() {
   // Handlers
   // ---------------------------------------------------------------------------
 
-  /**
-   * Cập nhật giá trị field và xoá lỗi của field đó ngay khi người dùng gõ.
-   * @param {string} field - Tên field trong formData
-   */
   const handleChange = (field) => (e) => {
     const value = e.target.value;
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Xoá lỗi field khi người dùng bắt đầu sửa
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
-    // Xoá lỗi general khi người dùng tương tác lại
     if (errors.general) {
       setErrors((prev) => ({ ...prev, general: '' }));
     }
   };
 
-  /** Toggle checkbox "Ghi nhớ đăng nhập" */
   const handleRememberMeChange = (e) => {
     setFormData((prev) => ({ ...prev, rememberMe: e.target.checked }));
   };
 
-  /** Toggle hiển thị / ẩn mật khẩu */
   const toggleShowPassword = () => setShowPassword((prev) => !prev);
 
   // ---------------------------------------------------------------------------
   // Validation
   // ---------------------------------------------------------------------------
 
-  /**
-   * Validate toàn bộ form trước khi submit.
-   * @returns {boolean} - true nếu hợp lệ
-   */
   const validate = () => {
     const newErrors = { ...INITIAL_LOGIN_ERRORS };
     let isValid = true;
@@ -93,14 +82,9 @@ export function useLogin() {
   };
 
   // ---------------------------------------------------------------------------
-  // Submit
+  // Submit & WebAuthn Flows
   // ---------------------------------------------------------------------------
 
-  /**
-   * Xử lý submit form đăng nhập.
-   * Validate → call AuthService.login() → navigate hoặc hiển thị lỗi.
-   * @param {React.FormEvent} e
-   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -117,8 +101,14 @@ export function useLogin() {
       });
 
       if (result.success) {
-        // Đăng nhập thành công → chuyển về trang chính
-        navigate('/', { replace: true });
+        // Đăng nhập thành công
+        // Kiểm tra xem thiết bị có hỗ trợ Face ID nhưng chưa đăng ký không
+        if (isFaceIdSupported && !isFaceIdRegistered) {
+          setShowPasskeyPrompt(true);
+          // Ta tạm thời chưa chuyển hướng vội, chờ người dùng phản hồi prompt
+        } else {
+          navigate('/', { replace: true });
+        }
       } else {
         setErrors((prev) => ({ ...prev, general: result.error }));
       }
@@ -130,13 +120,46 @@ export function useLogin() {
   };
 
   /**
-   * Xử lý đăng nhập bằng Face ID (WebAuthn).
-   * Hiện tại: không làm gì — placeholder cho tương lai.
+   * Đăng nhập trực tiếp bằng Face ID (Passkey).
    */
   const handleFaceIdLogin = async () => {
-    // TODO: Implement khi WebAuthnService.authenticate() sẵn sàng
-    // const result = await WebAuthnService.authenticate();
-    // if (result.success) navigate('/', { replace: true });
+    setIsLoading(true);
+    setErrors((prev) => ({ ...prev, general: '' }));
+
+    try {
+      const result = await WebAuthnService.authenticate();
+      if (result.success) {
+        navigate('/', { replace: true });
+      } else {
+        setErrors((prev) => ({ ...prev, general: result.error }));
+      }
+    } catch (err) {
+      setErrors((prev) => ({ ...prev, general: 'Lỗi hệ thống khi đăng nhập Face ID' }));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Người dùng ĐỒNG Ý thiết lập Face ID sau khi đăng nhập thành công
+   */
+  const handleRegisterPasskey = async () => {
+    // Đã đăng nhập mới gọi hàm này được
+    const result = await WebAuthnService.register();
+    if (!result.success) {
+      // Nếu lỗi (người dùng huỷ giữa chừng), vẫn cho họ vào hệ thống nhưng có thể báo lỗi snackbar sau này (ở đây đơn giản bỏ qua)
+      console.warn('Đăng ký Face ID thất bại/hủy:', result.error);
+    }
+    setShowPasskeyPrompt(false);
+    navigate('/', { replace: true });
+  };
+
+  /**
+   * Người dùng BỎ QUA thiết lập Face ID
+   */
+  const handleSkipPasskey = () => {
+    setShowPasskeyPrompt(false);
+    navigate('/', { replace: true });
   };
 
   // ---------------------------------------------------------------------------
@@ -151,6 +174,7 @@ export function useLogin() {
     showPassword,
     isFaceIdRegistered,
     isFaceIdSupported,
+    showPasskeyPrompt,
 
     // Handlers
     handleChange,
@@ -158,5 +182,7 @@ export function useLogin() {
     toggleShowPassword,
     handleSubmit,
     handleFaceIdLogin,
+    handleRegisterPasskey,
+    handleSkipPasskey,
   };
 }

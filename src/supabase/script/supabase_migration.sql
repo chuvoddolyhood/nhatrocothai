@@ -6,9 +6,10 @@
 -- 1. Bảng users (Người dùng)
 CREATE TABLE public.users (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  auth_id uuid UNIQUE, -- Liên kết với bảng auth.users của Supabase
   full_name character varying NOT NULL,
   email character varying UNIQUE,
-  phone character varying,
+  phone character varying UNIQUE,
   role character varying NOT NULL,
   status character varying DEFAULT 'ACTIVE'::character varying,
   created_at timestamp with time zone NOT NULL DEFAULT now(),

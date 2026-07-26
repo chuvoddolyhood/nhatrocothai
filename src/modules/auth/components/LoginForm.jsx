@@ -10,6 +10,11 @@ import {
   CircularProgress,
   Divider,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from '@mui/material';
 import {
   Phone,
@@ -49,9 +54,13 @@ const LoginForm = ({
   toggleShowPassword,
   handleSubmit,
   handleFaceIdLogin,
+  showPasskeyPrompt,
+  handleRegisterPasskey,
+  handleSkipPasskey,
 }) => {
   return (
-    <form onSubmit={handleSubmit} noValidate>
+    <>
+      <form onSubmit={handleSubmit} noValidate>
       <div className="flex flex-col gap-4">
 
         {/* ── Thông báo lỗi tổng quát (sai tài khoản, lỗi server...) ── */}
@@ -290,6 +299,43 @@ const LoginForm = ({
 
       </div>
     </form>
+
+    {/* ── Modal gợi ý cài đặt Face ID ── */}
+    <Dialog
+      open={showPasskeyPrompt}
+      onClose={handleSkipPasskey}
+      sx={{
+        '& .MuiDialog-paper': {
+          borderRadius: '16px',
+          padding: '8px',
+        }
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 600, pb: 1 }}>
+        Thiết lập Face ID / Touch ID
+      </DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ color: '#4b5563', fontSize: '0.95rem' }}>
+          Bạn có muốn thiết lập Face ID hoặc Touch ID trên thiết bị này để đăng nhập nhanh cho những lần sau không?
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={handleSkipPasskey} color="inherit" sx={{ fontWeight: 500 }}>
+          Bỏ qua
+        </Button>
+        <Button 
+          onClick={handleRegisterPasskey} 
+          variant="contained" 
+          sx={{ 
+            borderRadius: '8px',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          }}
+        >
+          Đồng ý thiết lập
+        </Button>
+      </DialogActions>
+    </Dialog>
+    </>
   );
 };
 
