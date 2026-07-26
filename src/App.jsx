@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { MobileNavigation } from './shared/components/MobileNavigation';
 import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
@@ -9,6 +10,8 @@ import { RoomService } from './modules/room/services/RoomService';
 import { ContractListPage } from './modules/contract/pages/ContractListPage';
 import { ReportingPage } from './modules/dashboard/pages/ReportingPage';
 import Header from './shared/components/ui/Header';
+import LoginPage from './modules/auth/pages/LoginPage';
+import { ProtectedRoute } from './shared/components/ProtectedRoute';
 
 const theme = createTheme({
   palette: {
@@ -36,77 +39,97 @@ const theme = createTheme({
   },
 });
 
-export default function App() {
-  const [currentView, setCurrentView] = useState(() => {
-    const saved = localStorage.getItem('currentView');
-    const validViews = ['dashboard', 'rooms', 'tenants', 'contracts', 'billing', 'reports'];
-    return validViews.includes(saved) ? saved : 'dashboard';
-  });
+function RoomListPageWrapper({ setHeaderConfig }) {
+  const location = useLocation();
+  const statusFilter = location.state?.statusFilter;
+  return <RoomListPage key={statusFilter || 'default'} view="rooms" setHeaderConfig={setHeaderConfig} initialStatusFilter={statusFilter} />;
+}
+
+function TenantListPageWrapper({ setHeaderConfig }) {
+  const location = useLocation();
+  const statusFilter = location.state?.statusFilter;
+  return <TenantListPage key={statusFilter || 'default'} setHeaderConfig={setHeaderConfig} initialStatusFilter={statusFilter} />;
+}
+
+/**
+ * MainLayout — Layout chính sau khi đăng nhập.
+ * Đã chuyển sang sử dụng React Router cho điều hướng nội bộ.
+ */
+function MainLayout() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [headerConfig, setHeaderConfig] = useState(null);
-  const [tenantInitFilter, setTenantInitFilter] = useState(null);
-  const [roomInitFilter, setRoomInitFilter] = useState(null);
+
+  const getPathForView = (view) => {
+    if (view === 'dashboard') return '/';
+    return `/${view}`;
+  };
+
+  const getViewFromPath = (path) => {
+    if (path === '/') return 'dashboard';
+    return path.replace('/', '');
+  };
+
+  const currentView = getViewFromPath(location.pathname);
 
   const handleViewChange = (view) => {
     if (view !== currentView) {
-      setCurrentView(view);
-      localStorage.setItem('currentView', view);
+      navigate(getPathForView(view));
       setHeaderConfig(null);
     }
   };
 
   const navigateTo = (view, options = {}) => {
-    setCurrentView(view);
-    localStorage.setItem('currentView', view);
+    navigate(getPathForView(view), { state: options });
     setHeaderConfig(null);
-    if (view === 'tenants' && options.statusFilter) {
-      setTenantInitFilter(options.statusFilter);
-    }
-    if (view === 'rooms' && options.statusFilter) {
-      setRoomInitFilter(options.statusFilter);
-    }
-  };
-
-  const renderContent = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <DashboardPage setHeaderConfig={setHeaderConfig} onNavigate={navigateTo} />;
-
-      case 'rooms':
-        return <RoomListPage view={currentView} setHeaderConfig={setHeaderConfig} initialStatusFilter={roomInitFilter} />;
-
-      case 'tenants':
-        return <TenantListPage setHeaderConfig={setHeaderConfig} initialStatusFilter={tenantInitFilter} />;
-
-      case 'contracts':
-        return <ContractListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
-
-      case 'billing':
-        return <InvoiceListPage view={currentView} setHeaderConfig={setHeaderConfig} />;
-
-      case 'reports':
-        return <ReportingPage view={currentView} setHeaderConfig={setHeaderConfig} />;
-
-      default:
-        return null;
-    }
   };
 
   return (
+    <div className="min-h-screen bg-linear-to-r from-indigo-50 via-white to-purple-50 pt-24">
+      <Header
+        data={headerConfig || {}}
+        onViewChange={handleViewChange}
+      />
+
+      <Routes>
+        <Route path="/" element={<DashboardPage setHeaderConfig={setHeaderConfig} onNavigate={navigateTo} />} />
+        <Route path="/rooms" element={<RoomListPageWrapper setHeaderConfig={setHeaderConfig} />} />
+        <Route path="/tenants" element={<TenantListPageWrapper setHeaderConfig={setHeaderConfig} />} />
+        <Route path="/contracts" element={<ContractListPage view="contracts" setHeaderConfig={setHeaderConfig} />} />
+        <Route path="/billing" element={<InvoiceListPage view="billing" setHeaderConfig={setHeaderConfig} />} />
+        <Route path="/reports" element={<ReportingPage view="reports" setHeaderConfig={setHeaderConfig} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+
+      <MobileNavigation
+        currentView={currentView}
+        onViewChange={handleViewChange}
+      />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <div className="min-h-screen bg-linear-to-r from-indigo-50 via-white to-purple-50 pt-24">
-        <Header
-          data={headerConfig || {}}
-          onViewChange={handleViewChange}
+      <Routes>
+        {/* Route công khai: Đăng nhập */}
+        <Route path="/login" element={<LoginPage />} />
+
+        {/* Route được bảo vệ: toàn bộ ứng dụng chính */}
+        <Route
+          path="/*"
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
         />
 
-        {renderContent()}
-
-        <MobileNavigation
-          currentView={currentView}
-          onViewChange={handleViewChange}
-        />
-      </div>
+        {/* Fallback: redirect về trang chính */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </ThemeProvider>
   );
 }
