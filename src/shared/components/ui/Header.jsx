@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { IconButton, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider } from '@mui/material';
 import { Menu, Home, Building2, Users, FileSignature, DollarSign, BarChart3, Settings, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { menuConfig } from '../common/MenuConfig';
+import { useAuth } from '../../contexts/AuthContext';
 
 const Header = ({ data, onViewChange }) => {
     const [drawerOpen, setDrawerOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [isScrolled, setIsScrolled] = useState(false);
     const [lastScrollY, setLastScrollY] = useState(0);
+    const { logout } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -134,7 +138,14 @@ const Header = ({ data, onViewChange }) => {
                         </ListItemButton>
                     </ListItem>
                     <ListItem disablePadding>
-                        <ListItemButton sx={{ borderRadius: '10px' }}>
+                        <ListItemButton
+                            sx={{ borderRadius: '10px' }}
+                            onClick={async () => {
+                                setDrawerOpen(false);
+                                await logout();
+                                navigate('/login', { replace: true });
+                            }}
+                        >
                             <ListItemIcon sx={{ minWidth: 40, color: '#ef4444' }}>
                                 <LogOut size={20} />
                             </ListItemIcon>
