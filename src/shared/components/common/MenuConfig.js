@@ -1,7 +1,8 @@
-import { BarChart3, Building2, DollarSign, FileSignature, Home, Users } from "lucide-react";
+import { BarChart3, Building2, DollarSign, FileSignature, Home, Users, Building } from "lucide-react";
 
 export const menuConfig = [
     { id: 'dashboard', label: 'Tổng quan', icon: Home },
+    { id: 'properties', label: 'Khu trọ', icon: Building },
     { id: 'rooms', label: 'Quản lý phòng', icon: Building2 },
     { id: 'tenants', label: 'Khách thuê', icon: Users },
     { id: 'contracts', label: 'Hợp đồng', icon: FileSignature },

@@ -6,7 +6,7 @@ import { DashboardPage } from './modules/dashboard/pages/DashboardPage';
 import { RoomListPage } from './modules/room/pages/RoomListPage';
 import { TenantListPage } from './modules/tenant/pages/TenantListPage';
 import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
-import { RoomService } from './modules/room/services/RoomService';
+import { PropertyListPage } from './modules/properties/pages/PropertyListPage';
 import { ContractListPage } from './modules/contract/pages/ContractListPage';
 import { ReportingPage } from './modules/dashboard/pages/ReportingPage';
 import Header from './shared/components/ui/Header';
@@ -93,6 +93,7 @@ function MainLayout() {
 
       <Routes>
         <Route path="/" element={<DashboardPage setHeaderConfig={setHeaderConfig} onNavigate={navigateTo} />} />
+        <Route path="/properties" element={<PropertyListPage view="properties" setHeaderConfig={setHeaderConfig} />} />
         <Route path="/rooms" element={<RoomListPageWrapper setHeaderConfig={setHeaderConfig} />} />
         <Route path="/tenants" element={<TenantListPageWrapper setHeaderConfig={setHeaderConfig} />} />
         <Route path="/contracts" element={<ContractListPage view="contracts" setHeaderConfig={setHeaderConfig} />} />
