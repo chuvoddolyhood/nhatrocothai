@@ -77,7 +77,7 @@ export function OCRTestPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
         {/* Selection Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <button
