@@ -30,3 +30,9 @@ dist-ssr
 *.sln
 *.sw?
 
+
+# Firebase cache
+.firebase/
+
+# OpenCV.js (large file ~13MB, regenerate from npm package)
+public/opencv.js

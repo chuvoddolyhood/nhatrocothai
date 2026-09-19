@@ -425,7 +425,7 @@ export function InvoiceFormDialog({ open, onClose, onSuccess, editInvoice }) {
                                             error={electricError}
                                             helperText={electricError ? 'Chỉ số mới phải ≥ chỉ số cũ' : ''}
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                                            inputProps={{ min: electricOld }}
+                                            slotProps={{ htmlInput: { min: electricOld } }}
                                         />
                                         <Button
                                             variant="outlined"
@@ -480,7 +480,7 @@ export function InvoiceFormDialog({ open, onClose, onSuccess, editInvoice }) {
                                             error={waterError}
                                             helperText={waterError ? 'Chỉ số mới phải ≥ chỉ số cũ' : ''}
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
-                                            inputProps={{ min: waterOld }}
+                                            slotProps={{ htmlInput: { min: waterOld } }}
                                         />
                                         <Button
                                             variant="outlined"
@@ -540,7 +540,7 @@ export function InvoiceFormDialog({ open, onClose, onSuccess, editInvoice }) {
                                             value={discount}
                                             onChange={e => setDiscount(Number(e.target.value) || 0)}
                                             size="small"
-                                            inputProps={{ min: 0 }}
+                                            slotProps={{ htmlInput: { min: 0 } }}
                                             sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
                                         />
                                         <TextField

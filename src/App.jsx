@@ -9,6 +9,7 @@ import { InvoiceListPage } from './modules/invoice/pages/InvoiceListPage';
 import { PropertyListPage } from './modules/properties/pages/PropertyListPage';
 import { ContractListPage } from './modules/contract/pages/ContractListPage';
 import { ReportingPage } from './modules/dashboard/pages/ReportingPage';
+import { OCRTestPage } from './modules/ocr/pages/OCRTestPage';
 import Header from './shared/components/ui/Header';
 import LoginPage from './modules/auth/pages/LoginPage';
 import { ProtectedRoute } from './shared/components/ProtectedRoute';
@@ -99,6 +100,7 @@ function MainLayout() {
         <Route path="/contracts" element={<ContractListPage view="contracts" setHeaderConfig={setHeaderConfig} />} />
         <Route path="/billing" element={<InvoiceListPage view="billing" setHeaderConfig={setHeaderConfig} />} />
         <Route path="/reports" element={<ReportingPage view="reports" setHeaderConfig={setHeaderConfig} />} />
+        <Route path="/ocr-test" element={<OCRTestPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
