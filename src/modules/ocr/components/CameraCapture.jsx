@@ -3,9 +3,9 @@
  * Provides camera access and image capture functionality for meter reading
  */
 
-import { useRef, useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import { Camera, X, RotateCcw, Lightbulb } from 'lucide-react';
+import { useRef, useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { Camera, X, RotateCcw, Lightbulb } from "lucide-react";
 
 export function CameraCapture({ onCapture, onCancel }) {
   const videoRef = useRef(null);
@@ -13,7 +13,7 @@ export function CameraCapture({ onCapture, onCancel }) {
   const [stream, setStream] = useState(null);
   const [error, setError] = useState(null);
   const [isReady, setIsReady] = useState(false);
-  const [facingMode, setFacingMode] = useState('environment'); // 'environment' = rear camera
+  const [facingMode, setFacingMode] = useState("environment"); // 'environment' = rear camera
 
   // Start camera on mount
   useEffect(() => {
@@ -42,25 +42,35 @@ export function CameraCapture({ onCapture, onCancel }) {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
         setStream(mediaStream);
-        
+
         // Wait for video to be ready
         videoRef.current.onloadedmetadata = () => {
           setIsReady(true);
         };
       }
     } catch (err) {
-      console.error('[CameraCapture] Error accessing camera:', err);
-      
-      let errorMessage = 'Không thể truy cập camera.';
-      
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        errorMessage = 'Bạn cần cấp quyền truy cập camera để sử dụng tính năng này.';
-      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-        errorMessage = 'Không tìm thấy camera trên thiết bị.';
-      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
-        errorMessage = 'Camera đang được sử dụng bởi ứng dụng khác.';
+      console.error("[CameraCapture] Error accessing camera:", err);
+
+      let errorMessage = "Không thể truy cập camera.";
+
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
+        errorMessage =
+          "Bạn cần cấp quyền truy cập camera để sử dụng tính năng này.";
+      } else if (
+        err.name === "NotFoundError" ||
+        err.name === "DevicesNotFoundError"
+      ) {
+        errorMessage = "Không tìm thấy camera trên thiết bị.";
+      } else if (
+        err.name === "NotReadableError" ||
+        err.name === "TrackStartError"
+      ) {
+        errorMessage = "Camera đang được sử dụng bởi ứng dụng khác.";
       }
-      
+
       setError(errorMessage);
     }
   }
@@ -70,7 +80,7 @@ export function CameraCapture({ onCapture, onCancel }) {
    */
   function stopCamera() {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+      stream.getTracks().forEach((track) => track.stop());
       setStream(null);
       setIsReady(false);
     }
@@ -92,21 +102,21 @@ export function CameraCapture({ onCapture, onCancel }) {
     canvas.height = video.videoHeight;
 
     // Draw video frame to canvas
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     ctx.drawImage(video, 0, 0);
 
     // Convert canvas to blob
     canvas.toBlob(
       (blob) => {
         if (blob) {
-          const file = new File([blob], `meter_${Date.now()}.jpg`, { 
-            type: 'image/jpeg' 
+          const file = new File([blob], `meter_${Date.now()}.jpg`, {
+            type: "image/jpeg",
           });
           onCapture(file);
         }
       },
-      'image/jpeg',
-      0.9
+      "image/jpeg",
+      0.9,
     );
   }
 
@@ -115,7 +125,7 @@ export function CameraCapture({ onCapture, onCancel }) {
    */
   function toggleCamera() {
     stopCamera();
-    setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
+    setFacingMode((prev) => (prev === "environment" ? "user" : "environment"));
   }
 
   /**
@@ -129,7 +139,7 @@ export function CameraCapture({ onCapture, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black z-50 flex flex-col">
+    <div className="fixed inset-0 bg-black flex flex-col" style={{ zIndex: 1100 }}>
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent p-4">
         <div className="flex justify-between items-center">
@@ -141,11 +151,11 @@ export function CameraCapture({ onCapture, onCancel }) {
           >
             <X size={24} />
           </button>
-          
+
           <h2 className="text-white text-lg font-semibold">
             Chụp đồng hồ điện/nước
           </h2>
-          
+
           <button
             onClick={toggleCamera}
             className="text-white p-2 hover:bg-white/20 rounded-full transition"
@@ -182,7 +192,7 @@ export function CameraCapture({ onCapture, onCancel }) {
               muted
               className="w-full h-full object-cover"
             />
-            
+
             {/* Guide Overlay */}
             {isReady && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -194,7 +204,7 @@ export function CameraCapture({ onCapture, onCancel }) {
                     <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-green-400" />
                     <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-green-400" />
                     <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-green-400" />
-                    
+
                     {/* Center text */}
                     <div className="absolute inset-0 flex items-center justify-center">
                       <p className="text-white text-sm bg-black/50 px-3 py-1 rounded">
@@ -210,8 +220,8 @@ export function CameraCapture({ onCapture, onCancel }) {
       </div>
 
       {/* Tips Section */}
-      <div className="absolute bottom-32 left-0 right-0 z-10 bg-gradient-to-t from-black/60 to-transparent p-6">
-        <div className="flex items-start gap-2 text-white/90 mb-2">
+      <div className="absolute left-0 right-0 z-10 bg-gradient-to-t from-black/60 to-transparent p-6 pb-8" style={{ bottom: '160px' }}>
+        <div className="flex items-start gap-2 text-white/90">
           <Lightbulb size={20} className="flex-shrink-0 mt-0.5" />
           <div className="text-sm space-y-1">
             <p>• Đảm bảo ánh sáng tốt</p>
@@ -221,8 +231,8 @@ export function CameraCapture({ onCapture, onCancel }) {
         </div>
       </div>
 
-      {/* Capture Button */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 p-6 bg-gradient-to-t from-black/80 to-transparent">
+      {/* Capture Button - padding để tránh navigation bar (70px) */}
+      <div className="absolute left-0 right-0 bottom-0 z-10 p-6 bg-gradient-to-t from-black/80 to-transparent" style={{ paddingBottom: '90px' }}>
         <div className="flex justify-center">
           <button
             onClick={captureImage}
@@ -241,10 +251,21 @@ export function CameraCapture({ onCapture, onCancel }) {
       </div>
 
       {/* Hidden canvas for capturing */}
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );
 }
+
+export default CameraCapture;
+
+CameraCapture.propTypes = {
+  onCapture: PropTypes.func.isRequired,
+  onCancel: PropTypes.func,
+};
+
+CameraCapture.defaultProps = {
+  onCancel: null,
+};
 
 /**
  * Fallback file input for browsers without camera support
@@ -262,12 +283,11 @@ export function CameraFallback({ onCapture, onCancel }) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
       <h3 className="text-lg font-semibold mb-4">Chọn ảnh đồng hồ</h3>
-      
+
       <p className="text-gray-600 text-sm mb-4">
-        Trình duyệt của bạn không hỗ trợ camera. 
-        Vui lòng chọn ảnh từ thư viện.
+        Trình duyệt của bạn không hỗ trợ camera. Vui lòng chọn ảnh từ thư viện.
       </p>
-      
+
       <input
         ref={fileInputRef}
         type="file"
@@ -276,7 +296,7 @@ export function CameraFallback({ onCapture, onCancel }) {
         onChange={handleFileChange}
         className="hidden"
       />
-      
+
       <div className="flex gap-3">
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -286,7 +306,7 @@ export function CameraFallback({ onCapture, onCancel }) {
         >
           📷 Chọn ảnh
         </button>
-        
+
         <button
           onClick={onCancel}
           type="button"
