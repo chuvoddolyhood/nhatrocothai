@@ -1,5 +1,5 @@
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import { Home, Building2, Users, DollarSign, BarChart3, FileSignature } from 'lucide-react';
+import { Home, Building2, Users, DollarSign, FileSignature } from 'lucide-react';
 
 export function MobileNavigation({ currentView, onViewChange }) {
   const menuItems = [

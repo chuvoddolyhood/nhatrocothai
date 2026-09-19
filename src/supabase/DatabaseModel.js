@@ -1,4 +1,5 @@
 export const USERS = "users";
+export const PROPERTIES = "properties";
 export const ROOMS = "rooms";
 export const ROOM_PRICES = "room_prices";
 export const CONTRACTS = "contracts";
